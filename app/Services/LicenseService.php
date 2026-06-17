@@ -75,16 +75,8 @@ final class LicenseService
         );
 
         $machineSlots = LicenseSupport::machineSlotsFromProduct($product);
-        $purchaseType = (string) (
-            $requestData['purchase_type']
-            ?? $customerData['purchase_type']
-            ?? 'new_license'
-        );
-        $organizationName = trim((string) (
-            $customerData['organization_name']
-            ?? ($requestData['organization_name'] ?? '')
-        )) ?: null;
 
+        /** @var Subscription|null $renewal */
         $renewal = Subscription::query()
             ->where('customer_email', $email)
             ->orderByDesc('expires_at')
@@ -92,18 +84,10 @@ final class LicenseService
 
         if ($renewal) {
             $base = $renewal->expires_at->isFuture() ? $renewal->expires_at : now();
-            $slots = $renewal->machine_slots;
-            if ($purchaseType === 'new_equipment') {
-                $slots += $machineSlots;
-            } else {
-                $slots = max($slots, $machineSlots);
-            }
-
             $renewal->fill([
                 'customer_name' => $customerData['full_name'] ?? $renewal->customer_name,
-                'organization_name' => $organizationName ?? $renewal->organization_name,
                 'billing_period' => $period,
-                'machine_slots' => $slots,
+                'machine_slots' => max($renewal->machine_slots, $machineSlots),
                 'expires_at' => $base->copy()->addMonths($months),
                 'status' => Subscription::STATUS_ACTIVE,
                 'wompi_reference' => $reference !== null ? (string) $reference : null,
@@ -113,7 +97,6 @@ final class LicenseService
                 'metadata' => array_merge($renewal->metadata ?? [], [
                     'product_name' => $product['name'] ?? null,
                     'wompi_event' => $requestData['event'] ?? null,
-                    'purchase_type' => $purchaseType,
                     'renewed_at' => now()->toIso8601String(),
                 ]),
             ]);
@@ -124,7 +107,7 @@ final class LicenseService
                 'license_key' => LicenseSupport::generateLicenseKey(),
                 'customer_email' => $email,
                 'customer_name' => $customerData['full_name'] ?? null,
-                'organization_name' => $organizationName,
+                'organization_name' => $detail['organization_name'] ?? null,
                 'billing_period' => $period,
                 'machine_slots' => $machineSlots,
                 'starts_at' => $startsAt,
@@ -137,17 +120,24 @@ final class LicenseService
                 'metadata' => [
                     'product_name' => $product['name'] ?? null,
                     'wompi_event' => $requestData['event'] ?? null,
-                    'purchase_type' => $purchaseType,
                 ],
             ]);
         }
 
         $this->sendLicenseEmail($subscription);
 
+        Log::info('TipiDV licencia creada', [
+            'license_key' => $subscription->license_key,
+            'email' => $subscription->customer_email,
+            'expires_at' => $subscription->expires_at?->toIso8601String(),
+        ]);
+
         return $subscription;
     }
 
-    /** @return array{ok: bool, message: string, subscription?: Subscription, activation?: MachineActivation} */
+    /**
+     * @return array{ok: bool, message: string, subscription?: Subscription, activation?: MachineActivation}
+     */
     public function activate(string $licenseKey, string $email, string $machineFingerprint, ?string $machineLabel): array
     {
         $licenseKey = strtoupper(trim($licenseKey));
@@ -158,13 +148,19 @@ final class LicenseService
             return ['ok' => false, 'message' => 'Datos de activación incompletos.'];
         }
 
-        $subscription = Subscription::query()->where('license_key', $licenseKey)->first();
+        /** @var Subscription|null $subscription */
+        $subscription = Subscription::query()
+            ->where('license_key', $licenseKey)
+            ->first();
+
         if (! $subscription) {
             return ['ok' => false, 'message' => 'Clave de licencia no válida.'];
         }
+
         if (strcasecmp($subscription->customer_email, $email) !== 0) {
             return ['ok' => false, 'message' => 'El correo no coincide con la licencia.'];
         }
+
         if (! $subscription->isActive()) {
             return ['ok' => false, 'message' => 'La suscripción está vencida o inactiva. Renueve en el portal TipiDV.'];
         }
@@ -186,10 +182,11 @@ final class LicenseService
                 ];
             }
 
-            if ($subscription->activeActivations()->count() >= $subscription->machine_slots) {
+            $activeCount = $subscription->activeActivations()->count();
+            if ($activeCount >= $subscription->machine_slots) {
                 return [
                     'ok' => false,
-                    'message' => 'Esta licencia ya alcanzó el máximo de equipos permitidos.',
+                    'message' => 'Esta licencia ya alcanzó el máximo de equipos permitidos. Libere un equipo o compre otro plan.',
                 ];
             }
 
@@ -210,16 +207,22 @@ final class LicenseService
         });
     }
 
-    /** @return array{ok: bool, message: string, expires_at?: string, days_remaining?: int, offline_grace_days?: int} */
+    /**
+     * @return array{ok: bool, message: string, expires_at?: string, days_remaining?: int, offline_grace_days?: int}
+     */
     public function validate(string $licenseKey, string $machineFingerprint): array
     {
         $licenseKey = strtoupper(trim($licenseKey));
         $machineFingerprint = strtolower(trim($machineFingerprint));
 
-        $subscription = Subscription::query()->where('license_key', $licenseKey)->first();
+        $subscription = Subscription::query()
+            ->where('license_key', $licenseKey)
+            ->first();
+
         if (! $subscription) {
             return ['ok' => false, 'message' => 'Licencia no encontrada.'];
         }
+
         if (! $subscription->isActive()) {
             return ['ok' => false, 'message' => 'Suscripción vencida. Renueve en el portal TipiDV.'];
         }
@@ -236,11 +239,13 @@ final class LicenseService
 
         $activation->update(['last_seen_at' => now()]);
 
+        $daysRemaining = max(0, (int) now()->diffInDays($subscription->expires_at, false));
+
         return [
             'ok' => true,
             'message' => 'Licencia vigente.',
             'expires_at' => $subscription->expires_at->toIso8601String(),
-            'days_remaining' => max(0, (int) now()->diffInDays($subscription->expires_at, false)),
+            'days_remaining' => $daysRemaining,
             'offline_grace_days' => (int) config('licensing.offline_grace_days', 14),
             'billing_period' => $subscription->billing_period,
             'customer_email' => $subscription->customer_email,

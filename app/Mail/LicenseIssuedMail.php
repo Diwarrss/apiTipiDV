@@ -20,12 +20,14 @@ class LicenseIssuedMail extends Mailable
 
     public function build(): self
     {
+        $portal = (string) config('licensing.portal_url', 'https://tipidv.gridsoft.co');
+
         return $this
             ->subject('Tu licencia TipiDV está lista')
             ->view('emails.license-issued')
             ->with([
                 'subscription' => $this->subscription,
-                'portalUrl' => config('licensing.portal_url'),
+                'portalUrl' => $portal,
             ]);
     }
 }

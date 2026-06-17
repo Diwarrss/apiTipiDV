@@ -8,6 +8,7 @@ use App\Services\LicenseService;
 use App\Services\WindowsDownloadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 final class WebhookController extends Controller
 {
@@ -17,18 +18,31 @@ final class WebhookController extends Controller
 
     public function gridPay(Request $request): JsonResponse
     {
-        $data = $request->all();
+        $requestData = $request->all();
 
-        if (($data['event'] ?? null) !== 'APPROVED') {
-            return response()->json(['message' => 'Event ignored']);
+        if (($requestData['event'] ?? null) !== 'APPROVED') {
+            return response()->json(['message' => 'Event ignored'], 200);
         }
 
-        $subscription = $this->licenseService->handleApprovedPayment($data);
+        try {
+            $subscription = $this->licenseService->handleApprovedPayment($requestData);
 
-        return response()->json([
-            'message' => $subscription ? 'License processed' : 'Payment not provisioned',
-            'license_key' => $subscription?->license_key,
-        ], $subscription ? 200 : 422);
+            if ($subscription === null) {
+                return response()->json(['message' => 'Payment not applicable or could not be provisioned'], 422);
+            }
+
+            return response()->json([
+                'message' => 'TipiDV license processed',
+                'license_key' => $subscription->license_key,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('TipiDV webhook error', [
+                'error' => $e->getMessage(),
+                'uuid_transaction' => $requestData['uuid_transaction'] ?? null,
+            ]);
+
+            return response()->json(['message' => 'Webhook processing failed'], 500);
+        }
     }
 
     public function githubRelease(Request $request, WindowsDownloadService $downloads): JsonResponse
