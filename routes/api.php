@@ -12,3 +12,4 @@ Route::post('/activate', [LicenseController::class, 'activate']);
 Route::post('/validate', [LicenseController::class, 'validateLicense']);
 
 Route::post('/webhook/gridpay', [WebhookController::class, 'gridPay']);
+Route::post('/webhook/github-release', [WebhookController::class, 'githubRelease']);

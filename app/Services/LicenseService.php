@@ -75,6 +75,15 @@ final class LicenseService
         );
 
         $machineSlots = LicenseSupport::machineSlotsFromProduct($product);
+        $purchaseType = (string) (
+            $requestData['purchase_type']
+            ?? $customerData['purchase_type']
+            ?? 'new_license'
+        );
+        $organizationName = trim((string) (
+            $customerData['organization_name']
+            ?? ($requestData['organization_name'] ?? '')
+        )) ?: null;
 
         $renewal = Subscription::query()
             ->where('customer_email', $email)
@@ -83,10 +92,18 @@ final class LicenseService
 
         if ($renewal) {
             $base = $renewal->expires_at->isFuture() ? $renewal->expires_at : now();
+            $slots = $renewal->machine_slots;
+            if ($purchaseType === 'new_equipment') {
+                $slots += $machineSlots;
+            } else {
+                $slots = max($slots, $machineSlots);
+            }
+
             $renewal->fill([
                 'customer_name' => $customerData['full_name'] ?? $renewal->customer_name,
+                'organization_name' => $organizationName ?? $renewal->organization_name,
                 'billing_period' => $period,
-                'machine_slots' => max($renewal->machine_slots, $machineSlots),
+                'machine_slots' => $slots,
                 'expires_at' => $base->copy()->addMonths($months),
                 'status' => Subscription::STATUS_ACTIVE,
                 'wompi_reference' => $reference !== null ? (string) $reference : null,
@@ -96,6 +113,7 @@ final class LicenseService
                 'metadata' => array_merge($renewal->metadata ?? [], [
                     'product_name' => $product['name'] ?? null,
                     'wompi_event' => $requestData['event'] ?? null,
+                    'purchase_type' => $purchaseType,
                     'renewed_at' => now()->toIso8601String(),
                 ]),
             ]);
@@ -106,7 +124,7 @@ final class LicenseService
                 'license_key' => LicenseSupport::generateLicenseKey(),
                 'customer_email' => $email,
                 'customer_name' => $customerData['full_name'] ?? null,
-                'organization_name' => $detail['organization_name'] ?? null,
+                'organization_name' => $organizationName,
                 'billing_period' => $period,
                 'machine_slots' => $machineSlots,
                 'starts_at' => $startsAt,
@@ -119,6 +137,7 @@ final class LicenseService
                 'metadata' => [
                     'product_name' => $product['name'] ?? null,
                     'wompi_event' => $requestData['event'] ?? null,
+                    'purchase_type' => $purchaseType,
                 ],
             ]);
         }

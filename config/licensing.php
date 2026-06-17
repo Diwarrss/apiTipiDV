@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'offline_grace_days' => (int) env('OFFLINE_GRACE_DAYS', 14),
 
-    'portal_url' => env('PORTAL_URL', 'https://gridpos.co/tipidv'),
+    'portal_url' => env('PORTAL_URL', 'https://tipidv.gridsoft.co'),
 
     /** Slug en transacciones GridPay (no es tenant GridPOS). */
     'gridpay_slug' => env('GRIDPAY_SLUG', 'tipidv'),

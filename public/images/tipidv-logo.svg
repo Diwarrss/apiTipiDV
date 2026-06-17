@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" role="img" aria-label="TipiDV">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f26c20"/>
+      <stop offset="100%" stop-color="#d95a14"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon: PDF con pestañas de tipificación -->
+  <rect x="2" y="4" width="34" height="40" rx="6" fill="#fff" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="7" y="12" width="24" height="5" rx="2.5" fill="#f26c20"/>
+  <rect x="7" y="21" width="24" height="5" rx="2.5" fill="#247a2b"/>
+  <rect x="7" y="30" width="16" height="5" rx="2.5" fill="#9ca3af"/>
+  <path d="M28 4 L34 4 L34 12 L26 12 Z" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <!-- Wordmark -->
+  <text x="48" y="33" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="800" fill="#111827">Tipi</text>
+  <text x="108" y="33" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="800" fill="url(#g)">DV</text>
+</svg>
