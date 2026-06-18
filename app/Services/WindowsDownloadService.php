@@ -401,7 +401,7 @@ final class WindowsDownloadService
             throw new \InvalidArgumentException('No hay instalador local en releases/TipiDV-Setup.exe.');
         }
 
-        $this->ensureReleaseFilePermissions();
+        $this->fixReleasePermissions();
 
         $tag = ltrim(trim($tag), '@');
         $record = [
@@ -413,11 +413,12 @@ final class WindowsDownloadService
             'source' => 'repair',
         ];
 
-        try {
-            $this->writeRelease($record);
-        } catch (\RuntimeException $e) {
-            $this->writeLocalMeta($record);
-            Log::warning('TipiDV: repair parcial (solo release-meta.json)', ['error' => $e->getMessage()]);
+        $this->writeLocalMeta($record);
+
+        if (! $this->attemptWriteRelease($record)) {
+            Log::warning('TipiDV: windows-release.json no actualizado; sitio usa release-meta.json', [
+                'path' => Storage::disk('local')->path(self::STORE_PATH),
+            ]);
         }
 
         Cache::forget(self::CACHE_KEY);
@@ -428,21 +429,32 @@ final class WindowsDownloadService
     /** @param array<string, mixed> $data */
     private function writeRelease(array $data): void
     {
-        $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        if ($json === false) {
-            throw new \RuntimeException('No se pudo serializar metadata de release.');
-        }
+        $this->writeLocalMeta($data);
 
-        if (! $this->putLocalFile(self::STORE_PATH, $json)) {
+        if (! $this->attemptWriteRelease($data)) {
             $path = Storage::disk('local')->path(self::STORE_PATH);
             Log::error('TipiDV: no se pudo escribir windows-release.json', ['path' => $path]);
             throw new \RuntimeException(
                 'No se pudo guardar '.self::STORE_PATH.' — revisa permisos en storage/app/private (ej. chown ubuntu:www-data && chmod g+w).'
             );
         }
+    }
 
-        $this->writeLocalMeta($data);
+    /** @param array<string, mixed> $data */
+    private function attemptWriteRelease(array $data): bool
+    {
+        $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if ($json === false) {
+            return false;
+        }
+
+        if (! $this->putLocalFile(self::STORE_PATH, $json)) {
+            return false;
+        }
+
         Cache::forget(self::CACHE_KEY);
+
+        return true;
     }
 
     /** @param array<string, mixed> $data */
@@ -479,10 +491,16 @@ final class WindowsDownloadService
         $absolutePath = Storage::disk('local')->path($relativePath);
         $dir = dirname($absolutePath);
         if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            @mkdir($dir, 0755, true);
         }
 
-        return file_put_contents($absolutePath, $contents) !== false;
+        try {
+            $written = @file_put_contents($absolutePath, $contents);
+
+            return $written !== false;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** @return array<string, mixed>|null */

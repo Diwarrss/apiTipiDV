@@ -29,14 +29,31 @@ final class RepairWindowsReleaseCommand extends Command
             return self::FAILURE;
         }
 
-        $downloads->fixReleasePermissions();
+        $metaPath = storage_path('app/private/releases/release-meta.json');
+        $storePath = storage_path('app/private/windows-release.json');
+        $mainJsonOk = false;
+        if (is_readable($storePath)) {
+            $onDisk = json_decode((string) file_get_contents($storePath), true);
+            $mainJsonOk = is_array($onDisk) && ($onDisk['tag'] ?? null) === ($record['tag'] ?? $tag);
+        }
 
         $this->info('Metadata reparada');
         $this->table(['Campo', 'Valor'], [
             ['Tag', $record['tag'] ?? '—'],
             ['Versión sitio', $record['version'] ?? '—'],
+            ['Meta local', file_exists($metaPath) ? 'Sí ✓' : 'No'],
+            ['windows-release.json', $mainJsonOk ? 'Sí ✓' : 'No (permisos)'],
             ['URL pública', route('site.download')],
         ]);
+
+        if (! $mainJsonOk) {
+            $this->newLine();
+            $this->warn('release-meta.json sí se actualizó; el sitio debería funcionar.');
+            $this->line('Para arreglar windows-release.json también:');
+            $this->line('  sudo chown ubuntu:www-data storage/app/private/windows-release.json');
+            $this->line('  sudo chmod g+w storage/app/private/windows-release.json');
+        }
+
         $this->line('Verifica: php artisan tipidv:release-status');
 
         return self::SUCCESS;
