@@ -24,6 +24,13 @@ final class WindowsDownloadService
 
     private const CACHE_KEY = 'tipidv.windows_release';
 
+    private ?string $lastMirrorError = null;
+
+    public function getLastMirrorError(): ?string
+    {
+        return $this->lastMirrorError;
+    }
+
     /** @param array{tag?: string, version?: string, setup_url: string, portable_url?: string|null, published_at?: string} $payload */
     public function persistFromWebhook(array $payload): void
     {
@@ -146,8 +153,16 @@ final class WindowsDownloadService
             return null;
         }
 
-        if ($mirrorToServer && ! empty($release['external_setup_url'])) {
-            $release = $this->mirrorExternalSetup($release) ?? $release;
+        if ($persist) {
+            $release['source'] = 'github_sync';
+            $this->writeRelease($release);
+        }
+
+        if ($mirrorToServer) {
+            $mirrored = $this->mirrorExternalSetup($release);
+            if ($mirrored !== null) {
+                $release = $mirrored;
+            }
         }
 
         if ($persist) {
@@ -194,46 +209,43 @@ final class WindowsDownloadService
         return $record;
     }
 
-    /** Descarga el instalador desde la URL externa (GitHub) al disco local. */
+    /** Descarga el instalador al disco local (API de assets GitHub para repos privados). */
     public function mirrorExternalSetup(array $release): ?array
     {
-        $url = $release['external_setup_url'] ?? $release['setup_url'] ?? null;
-        if (! is_string($url) || $url === '') {
+        $this->lastMirrorError = null;
+        $token = trim((string) config('marketing.github_token', ''));
+        $repo = trim((string) config('marketing.github_repo', ''));
+
+        if ($token === '') {
+            $this->lastMirrorError = 'Falta MARKETING_GITHUB_TOKEN en .env';
+
             return null;
         }
 
-        $dir = dirname(self::LOCAL_SETUP_PATH);
-        if ($dir !== '.' && ! Storage::disk('local')->exists($dir)) {
-            Storage::disk('local')->makeDirectory($dir);
+        $this->ensureReleaseDirectory();
+
+        $assetId = isset($release['setup_asset_id']) ? (int) $release['setup_asset_id'] : 0;
+        $downloaded = false;
+
+        if ($assetId > 0 && $repo !== '') {
+            $downloaded = $this->downloadGithubReleaseAsset($repo, $assetId, $token);
         }
 
-        $tempPath = Storage::disk('local')->path(self::LOCAL_SETUP_PATH.'.part');
-        $finalPath = Storage::disk('local')->path(self::LOCAL_SETUP_PATH);
-
-        $request = Http::timeout(600)->accept('*/*');
-        $token = (string) config('marketing.github_token', '');
-        if ($token !== '' && str_contains($url, 'github.com')) {
-            $request = $request->withToken($token);
-        }
-
-        $response = $request->withOptions(['sink' => $tempPath])->get($url);
-
-        if (! $response->successful() || ! is_file($tempPath) || filesize($tempPath) < 1024) {
-            if (is_file($tempPath)) {
-                @unlink($tempPath);
+        if (! $downloaded) {
+            $url = $release['external_setup_url'] ?? $release['setup_url'] ?? null;
+            if (is_string($url) && $url !== '') {
+                $downloaded = $this->downloadUrlToLocal($url, $token);
             }
-            Log::error('TipiDV: no se pudo copiar instalador al servidor', [
-                'status' => $response->status(),
-                'url' => $url,
-            ]);
+        }
 
+        if (! $downloaded) {
             return null;
         }
 
-        rename($tempPath, $finalPath);
+        @chmod($this->localSetupAbsolutePath(), 0644);
 
         $release['local_file'] = self::LOCAL_SETUP_PATH;
-        $release['local_size'] = filesize($finalPath);
+        $release['local_size'] = filesize($this->localSetupAbsolutePath());
         $release['mirrored_at'] = now()->toIso8601String();
 
         Log::info('TipiDV: instalador copiado al servidor', [
@@ -242,6 +254,87 @@ final class WindowsDownloadService
         ]);
 
         return $release;
+    }
+
+    private function ensureReleaseDirectory(): void
+    {
+        $dir = dirname(self::LOCAL_SETUP_PATH);
+        if ($dir !== '.' && ! Storage::disk('local')->exists($dir)) {
+            Storage::disk('local')->makeDirectory($dir);
+        }
+    }
+
+    private function downloadGithubReleaseAsset(string $repo, int $assetId, string $token): bool
+    {
+        $tempPath = $this->partFilePath();
+        $url = 'https://api.github.com/repos/'.$repo.'/releases/assets/'.$assetId;
+
+        $response = Http::timeout(600)
+            ->withHeaders([
+                'Authorization' => 'Bearer '.$token,
+                'Accept' => 'application/octet-stream',
+                'X-GitHub-Api-Version' => '2022-11-28',
+            ])
+            ->withOptions(['sink' => $tempPath, 'allow_redirects' => true])
+            ->get($url);
+
+        return $this->finalizeDownload($tempPath, $response->status(), $url, (string) $response->body());
+    }
+
+    private function downloadUrlToLocal(string $url, string $token): bool
+    {
+        $tempPath = $this->partFilePath();
+
+        $response = Http::timeout(600)
+            ->withHeaders([
+                'Authorization' => 'Bearer '.$token,
+                'Accept' => 'application/octet-stream',
+            ])
+            ->withOptions(['sink' => $tempPath, 'allow_redirects' => true])
+            ->get($url);
+
+        return $this->finalizeDownload($tempPath, $response->status(), $url, (string) $response->body());
+    }
+
+    private function partFilePath(): string
+    {
+        return Storage::disk('local')->path(self::LOCAL_SETUP_PATH.'.part');
+    }
+
+    private function finalizeDownload(string $tempPath, int $status, string $url, string $bodySnippet): bool
+    {
+        if (is_file($tempPath)) {
+            $size = filesize($tempPath);
+            $head = file_get_contents($tempPath, false, null, 0, 200) ?: '';
+            $looksHtml = str_starts_with(ltrim($head), '<') || str_contains(strtolower($head), '<html');
+
+            if ($status >= 200 && $status < 300 && $size >= 1024 && ! $looksHtml) {
+                rename($tempPath, $this->localSetupAbsolutePath());
+
+                return true;
+            }
+
+            @unlink($tempPath);
+            $this->lastMirrorError = "HTTP {$status}, {$size} bytes"
+                .($looksHtml ? ' (GitHub devolvió HTML — token sin acceso al repo o URL incorrecta)' : '');
+        } else {
+            $this->lastMirrorError = "HTTP {$status}, archivo vacío";
+        }
+
+        if ($this->lastMirrorError === null || $this->lastMirrorError === "HTTP {$status}, archivo vacío") {
+            $snippet = substr(preg_replace('/\s+/', ' ', strip_tags($bodySnippet)) ?? '', 0, 120);
+            if ($snippet !== '') {
+                $this->lastMirrorError .= ' — '.$snippet;
+            }
+        }
+
+        Log::error('TipiDV: falló copia del instalador al servidor', [
+            'status' => $status,
+            'url' => $url,
+            'error' => $this->lastMirrorError,
+        ]);
+
+        return false;
     }
 
     public function clearCache(): void
@@ -392,7 +485,7 @@ final class WindowsDownloadService
 
         $portableName = (string) config('marketing.portable_asset_name', 'TipiDV-Portable.zip');
 
-        return $this->buildReleaseRecord(
+        $record = $this->buildReleaseRecord(
             tag: $tagName,
             version: $this->releaseVersionLabel($tagName),
             externalUrl: $setupUrl,
@@ -400,6 +493,13 @@ final class WindowsDownloadService
             publishedAt: isset($release['published_at']) ? (string) $release['published_at'] : null,
             source: 'github_api',
         );
+
+        $assetId = $this->findAssetId($assets, $setupName);
+        if ($assetId !== null) {
+            $record['setup_asset_id'] = $assetId;
+        }
+
+        return $record;
     }
 
     private function releaseVersionLabel(?string $tag): ?string
@@ -417,6 +517,21 @@ final class WindowsDownloadService
         }
 
         return $tag;
+    }
+
+    /** @param array<int, array<string, mixed>> $assets */
+    private function findAssetId(array $assets, string $name): ?int
+    {
+        foreach ($assets as $asset) {
+            if (! is_array($asset)) {
+                continue;
+            }
+            if (($asset['name'] ?? '') === $name && isset($asset['id'])) {
+                return (int) $asset['id'];
+            }
+        }
+
+        return null;
     }
 
     /** @param array<int, array<string, mixed>> $assets */

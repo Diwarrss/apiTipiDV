@@ -66,7 +66,12 @@ final class SyncWindowsReleaseCommand extends Command
             $rows[] = ['URL pública', route('site.download')];
         } else {
             $rows[] = ['URL externa', $release['external_setup_url'] ?? $release['setup_url'] ?? '—'];
-            $this->warn('El .exe NO quedó en el servidor. Reintenta sin --no-mirror o usa tipidv:release-upload.');
+            $this->warn('El .exe NO quedó en el servidor.');
+            $mirrorError = $downloads->getLastMirrorError();
+            if ($mirrorError) {
+                $this->error('Motivo: '.$mirrorError);
+            }
+            $this->line('Alternativa: scp TipiDV-Setup.exe al server → php artisan tipidv:release-upload /tmp/TipiDV-Setup.exe --tag=build-17');
         }
 
         $this->info('Release actualizada');
