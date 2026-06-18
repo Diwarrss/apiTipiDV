@@ -7,16 +7,11 @@ return [
 
     'portal_url' => env('PORTAL_URL', 'https://tipidv.gridsoft.co'),
 
-    /** Slug en transacciones GridPay (no es tenant GridPOS). */
-    'gridpay_slug' => env('GRIDPAY_SLUG', 'tipidv'),
-
-    'products' => [
-        'monthly' => env('PRODUCT_MONTHLY_UUID'),
-        'annual' => env('PRODUCT_ANNUAL_UUID'),
-    ],
-
-    'gridpay' => [
-        'url' => rtrim((string) env('GRIDPAY_URL', ''), '/'),
-        'key' => (string) env('GRIDPAY_API_KEY', ''),
+    'wompi' => [
+        'api_url' => rtrim((string) env('WOMPI_API_URL', 'https://production.wompi.co/v1'), '/'),
+        'public_key' => (string) env('WOMPI_PUBLIC_KEY', ''),
+        'private_key' => (string) env('WOMPI_PRIVATE_KEY', ''),
+        'events_secret' => (string) env('WOMPI_EVENTS_SECRET', ''),
+        'integrity_secret' => (string) env('WOMPI_INTEGRITY_SECRET', ''),
     ],
 ];

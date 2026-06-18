@@ -6,9 +6,9 @@ API Laravel standalone para licencias por equipo de **TipiDV** (separada de apiG
 
 ```
 Portal tipidv.gridsoft.co
-  → POST /api/checkout (GridPay + Wompi)
-  → Pago aprobado
-  → Webhook POST /api/webhook/gridpay (service_type: TIPIDV)
+  → POST /api/checkout (Wompi payment link)
+  → Cliente paga en checkout.wompi.co
+  → Wompi POST /api/webhook/wompi (evento transaction.updated APPROVED)
   → subscriptions + correo con clave TDV-XXXX-XXXX-XXXX
   → TipiDV en el PC: activar con correo + clave
   → POST /api/activate (vincula machine_fingerprint)
@@ -37,12 +37,12 @@ Ver `.env.example`. Variables propias de TipiDV:
 ```env
 APP_URL=https://tipidv.gridsoft.co
 
-# GridPay (checkout + webhook enriquecido). Llaves Wompi del comercio van en GridPay.
-GRIDPAY_URL=https://api.gridbilling.co
-GRIDPAY_API_KEY=...
-GRIDPAY_SLUG=tipidv
-PRODUCT_MONTHLY_UUID=...
-PRODUCT_ANNUAL_UUID=...
+# Wompi producción (dashboard del comercio)
+WOMPI_API_URL=https://production.wompi.co/v1
+WOMPI_PUBLIC_KEY=...
+WOMPI_PRIVATE_KEY=...
+WOMPI_EVENTS_SECRET=...
+WOMPI_INTEGRITY_SECRET=...
 PORTAL_URL=https://tipidv.gridsoft.co
 OFFLINE_GRACE_DAYS=14
 

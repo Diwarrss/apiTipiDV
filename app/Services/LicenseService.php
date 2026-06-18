@@ -15,66 +15,85 @@ use Illuminate\Support\Facades\Mail;
 
 final class LicenseService
 {
-    public function handleApprovedPayment(array $requestData): ?Subscription
+    /** Pago aprobado vía webhook Wompi directo. */
+    public function handleWompiApproved(array $wompiTransaction, array $pending): ?Subscription
     {
-        $transaction = $requestData['transaction'] ?? null;
-        if (! is_array($transaction) || ! isset($transaction['product'])) {
-            return null;
-        }
-
-        $product = $transaction['product'];
-        if (! LicenseSupport::isTipidvProduct($product)) {
-            return null;
-        }
-
-        $transactionUuid = isset($requestData['uuid_transaction'])
-            ? (string) $requestData['uuid_transaction']
-            : null;
-
-        if ($transactionUuid) {
+        $wompiId = (string) ($wompiTransaction['id'] ?? '');
+        if ($wompiId !== '') {
             $existing = Subscription::query()
-                ->where('transaction_uuid', $transactionUuid)
+                ->where('wompi_reference', $wompiId)
                 ->first();
             if ($existing) {
                 return $existing;
             }
         }
 
-        $wompiTransaction = $requestData['wompi_event']['data']['transaction'] ?? null;
-        $customerData = $transaction['customer'] ?? [];
+        $customer = $pending['customer'] ?? [];
         $email = strtolower(trim((string) (
-            $customerData['email']
+            $customer['email']
             ?? ($wompiTransaction['customer_email'] ?? '')
         )));
 
         if ($email === '') {
-            Log::error('TipiDV webhook: sin email de cliente', ['transaction_uuid' => $transactionUuid]);
+            Log::error('TipiDV Wompi: sin email', ['wompi_id' => $wompiId]);
 
             return null;
         }
 
-        $amount = 0.0;
-        if (isset($wompiTransaction['amount_in_cents']) && $wompiTransaction['amount_in_cents'] > 0) {
-            $amount = $wompiTransaction['amount_in_cents'] / 100;
-        } else {
-            $amount = (float) ($product['value'] ?? 0);
-        }
+        $amount = isset($wompiTransaction['amount_in_cents'])
+            ? ((int) $wompiTransaction['amount_in_cents']) / 100
+            : (float) ($pending['amount_cop'] ?? 0);
 
-        $reference = $wompiTransaction['id']
-            ?? $transaction['reference_transaction']
-            ?? $transactionUuid;
+        $months = max(1, (int) ($pending['billing_months'] ?? 12));
+        $period = (string) ($pending['period'] ?? LicenseSupport::PERIOD_ANNUAL);
+        $machineSlots = max(1, (int) ($pending['machine_slots'] ?? 1));
+        $startsAt = GridPayTimestamp::parse($wompiTransaction['created_at'] ?? null);
 
-        $months = LicenseSupport::billingMonthsFromProduct($product);
-        $detail = $product['detail'] ?? [];
-        $period = $detail['billing_period'] ?? ($months === 1
-            ? LicenseSupport::PERIOD_MONTHLY
-            : LicenseSupport::PERIOD_ANNUAL);
+        $productPayload = [
+            'name' => $pending['plan_name'] ?? 'TipiDV',
+            'value' => $amount,
+            'detail' => [
+                'service_type' => LicenseSupport::SERVICE_TYPE,
+                'billing_period' => $period,
+                'billing_months' => $months,
+                'machine_slots' => $machineSlots,
+                'organization_name' => $pending['organization_name'] ?? null,
+                'purchase_type' => $pending['purchase_type'] ?? null,
+            ],
+        ];
 
-        $startsAt = GridPayTimestamp::parse(
-            $transaction['created_at'] ?? ($wompiTransaction['created_at'] ?? null)
+        return $this->provisionSubscription(
+            email: $email,
+            customerName: $customer['full_name'] ?? null,
+            product: $productPayload,
+            months: $months,
+            period: $period,
+            machineSlots: $machineSlots,
+            amount: $amount,
+            wompiReference: $wompiId !== '' ? $wompiId : null,
+            transactionUuid: (string) ($pending['reference'] ?? null),
+            wompiEvent: 'transaction.updated',
+            startsAt: $startsAt,
         );
+    }
 
-        $machineSlots = LicenseSupport::machineSlotsFromProduct($product);
+    /**
+     * @param array<string, mixed> $product
+     */
+    private function provisionSubscription(
+        string $email,
+        ?string $customerName,
+        array $product,
+        int $months,
+        string $period,
+        int $machineSlots,
+        float $amount,
+        ?string $wompiReference,
+        ?string $transactionUuid,
+        ?string $wompiEvent,
+        ?\Carbon\CarbonInterface $startsAt = null,
+    ): Subscription {
+        $startsAt = $startsAt ?? GridPayTimestamp::parse(null);
 
         /** @var Subscription|null $renewal */
         $renewal = Subscription::query()
@@ -85,18 +104,17 @@ final class LicenseService
         if ($renewal) {
             $base = $renewal->expires_at->isFuture() ? $renewal->expires_at : now();
             $renewal->fill([
-                'customer_name' => $customerData['full_name'] ?? $renewal->customer_name,
+                'customer_name' => $customerName ?? $renewal->customer_name,
                 'billing_period' => $period,
                 'machine_slots' => max($renewal->machine_slots, $machineSlots),
                 'expires_at' => $base->copy()->addMonths($months),
                 'status' => Subscription::STATUS_ACTIVE,
-                'wompi_reference' => $reference !== null ? (string) $reference : null,
+                'wompi_reference' => $wompiReference,
                 'transaction_uuid' => $transactionUuid,
-                'gridpay_product_uuid' => $product['uuid'] ?? null,
                 'amount_cop' => $amount,
                 'metadata' => array_merge($renewal->metadata ?? [], [
                     'product_name' => $product['name'] ?? null,
-                    'wompi_event' => $requestData['event'] ?? null,
+                    'wompi_event' => $wompiEvent,
                     'renewed_at' => now()->toIso8601String(),
                 ]),
             ]);
@@ -106,30 +124,29 @@ final class LicenseService
             $subscription = Subscription::query()->create([
                 'license_key' => LicenseSupport::generateLicenseKey(),
                 'customer_email' => $email,
-                'customer_name' => $customerData['full_name'] ?? null,
-                'organization_name' => $detail['organization_name'] ?? null,
+                'customer_name' => $customerName,
+                'organization_name' => $product['detail']['organization_name'] ?? null,
                 'billing_period' => $period,
                 'machine_slots' => $machineSlots,
                 'starts_at' => $startsAt,
                 'expires_at' => $startsAt->copy()->addMonths($months),
                 'status' => Subscription::STATUS_ACTIVE,
-                'wompi_reference' => $reference !== null ? (string) $reference : null,
+                'wompi_reference' => $wompiReference,
                 'transaction_uuid' => $transactionUuid,
-                'gridpay_product_uuid' => $product['uuid'] ?? null,
                 'amount_cop' => $amount,
                 'metadata' => [
                     'product_name' => $product['name'] ?? null,
-                    'wompi_event' => $requestData['event'] ?? null,
+                    'wompi_event' => $wompiEvent,
+                    'purchase_type' => $product['detail']['purchase_type'] ?? null,
                 ],
             ]);
         }
 
         $this->sendLicenseEmail($subscription);
 
-        Log::info('TipiDV licencia creada', [
+        Log::info('TipiDV licencia creada (Wompi)', [
             'license_key' => $subscription->license_key,
             'email' => $subscription->customer_email,
-            'expires_at' => $subscription->expires_at?->toIso8601String(),
         ]);
 
         return $subscription;

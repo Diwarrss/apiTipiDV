@@ -5,30 +5,62 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Services\LicenseService;
+use App\Services\WompiCheckoutService;
 use App\Services\WindowsDownloadService;
+use App\Support\WompiWebhook;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 final class WebhookController extends Controller
 {
-    public function __construct(private readonly LicenseService $licenseService)
-    {
+    public function __construct(
+        private readonly LicenseService $licenseService,
+        private readonly WompiCheckoutService $wompiCheckout,
+    ) {
     }
 
-    public function gridPay(Request $request): JsonResponse
+    /** Eventos Wompi → URL configurada en el dashboard del comercio. */
+    public function wompi(Request $request): JsonResponse
     {
-        $requestData = $request->all();
+        $payload = $request->all();
+        $eventsSecret = (string) config('licensing.wompi.events_secret', '');
 
-        if (($requestData['event'] ?? null) !== 'APPROVED') {
+        if ($eventsSecret !== '' && ! WompiWebhook::verify($payload, $eventsSecret)) {
+            Log::warning('TipiDV Wompi webhook: firma inválida');
+
+            return response()->json(['message' => 'Invalid signature'], 401);
+        }
+
+        $event = (string) ($payload['event'] ?? '');
+        $transaction = $payload['data']['transaction'] ?? null;
+        if ($event !== 'transaction.updated' || ! is_array($transaction)) {
             return response()->json(['message' => 'Event ignored'], 200);
         }
 
+        if (($transaction['status'] ?? '') !== 'APPROVED') {
+            return response()->json(['message' => 'Transaction not approved'], 200);
+        }
+
+        $pending = $this->wompiCheckout->resolvePending(
+            isset($transaction['payment_link_id']) ? (string) $transaction['payment_link_id'] : null,
+            isset($transaction['reference']) ? (string) $transaction['reference'] : null,
+        );
+
+        if ($pending === null) {
+            Log::error('TipiDV Wompi: checkout pendiente no encontrado', [
+                'payment_link_id' => $transaction['payment_link_id'] ?? null,
+                'reference' => $transaction['reference'] ?? null,
+            ]);
+
+            return response()->json(['message' => 'Pending checkout not found'], 422);
+        }
+
         try {
-            $subscription = $this->licenseService->handleApprovedPayment($requestData);
+            $subscription = $this->licenseService->handleWompiApproved($transaction, $pending);
 
             if ($subscription === null) {
-                return response()->json(['message' => 'Payment not applicable or could not be provisioned'], 422);
+                return response()->json(['message' => 'Could not provision license'], 422);
             }
 
             return response()->json([
@@ -36,10 +68,7 @@ final class WebhookController extends Controller
                 'license_key' => $subscription->license_key,
             ]);
         } catch (\Throwable $e) {
-            Log::error('TipiDV webhook error', [
-                'error' => $e->getMessage(),
-                'uuid_transaction' => $requestData['uuid_transaction'] ?? null,
-            ]);
+            Log::error('TipiDV Wompi webhook error', ['error' => $e->getMessage()]);
 
             return response()->json(['message' => 'Webhook processing failed'], 500);
         }

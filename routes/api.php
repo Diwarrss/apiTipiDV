@@ -11,5 +11,7 @@ Route::post('/checkout', [LicenseController::class, 'checkout']);
 Route::post('/activate', [LicenseController::class, 'activate']);
 Route::post('/validate', [LicenseController::class, 'validateLicense']);
 
-Route::post('/webhook/gridpay', [WebhookController::class, 'gridPay']);
+Route::post('/webhook/wompi', [WebhookController::class, 'wompi']);
+/** @deprecated alias — misma URL que configuraste en Wompi */
+Route::post('/webhook/gridpay', [WebhookController::class, 'wompi']);
 Route::post('/webhook/github-release', [WebhookController::class, 'githubRelease']);
