@@ -134,8 +134,23 @@ code {
 .logo-wordmark span { color: var(--orange); }
 
 .nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.nav a { color: var(--text-nav); font-weight: 500; font-size: .95rem; }
-.nav a:hover { color: var(--orange); }
+.nav a:not(.btn) { color: var(--text-nav); font-weight: 500; font-size: .95rem; }
+.nav a:not(.btn):hover { color: var(--orange); }
+.nav .btn-primary {
+    color: #fff;
+    font-weight: 700;
+    font-size: .9rem;
+    padding: 10px 18px;
+    border-radius: 10px;
+    line-height: 1.25;
+    white-space: nowrap;
+    box-shadow: 0 2px 12px var(--orange-glow);
+}
+.nav .btn-primary:hover {
+    color: #fff;
+    background: var(--orange-dark);
+    box-shadow: 0 4px 16px var(--orange-glow);
+}
 
 .theme-toggle {
     display: inline-flex;

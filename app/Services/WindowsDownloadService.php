@@ -116,14 +116,18 @@ final class WindowsDownloadService
             return null;
         }
 
-        $url = 'https://api.github.com/repos/'.$repo.'/releases/latest';
-        $request = Http::timeout(10)->acceptJson();
         $token = (string) config('marketing.github_token', '');
-        if ($token !== '') {
-            $request = $request->withToken($token);
+        // Repo privado: sin token GitHub responde 404 (no 403). Usar webhook o MARKETING_GITHUB_TOKEN.
+        if ($token === '') {
+            return null;
         }
 
-        $response = $request->get($url);
+        $url = 'https://api.github.com/repos/'.$repo.'/releases/latest';
+        $response = Http::timeout(10)
+            ->acceptJson()
+            ->withToken($token)
+            ->get($url);
+
         if (! $response->successful()) {
             Log::warning('TipiDV: GitHub releases/latest falló', [
                 'status' => $response->status(),
