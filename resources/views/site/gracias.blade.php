@@ -19,8 +19,8 @@
                 <li>En todos los equipos: el mismo correo + la misma clave (1 clave = N PCs según tu paquete).</li>
             </ol>
             <div style="margin-top:28px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
-                @if(!empty($downloadUrl))
-                    <a href="{{ $downloadUrl }}" class="btn btn-primary">Descargar TipiDV</a>
+                @if(!empty($hasDownload))
+                    <a href="{{ route('site.download') }}" class="btn btn-primary">Descargar TipiDV</a>
                 @endif
                 <a href="https://wa.me/{{ config('marketing.whatsapp') }}?text=Acabo%20de%20comprar%20TipiDV" class="btn btn-outline" target="_blank" rel="noopener">Soporte WhatsApp</a>
             </div>

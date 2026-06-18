@@ -1,94 +1,141 @@
 @extends('site.layout')
 
-{{-- Título SEO principal viene de config marketing.seo.title --}}
-
 @php
     $fmt = fn (float $n) => '$' . number_format($n, 0, ',', '.');
     $defaultPlan = request('plan', 'annual');
     $plansJson = json_encode($plans, JSON_UNESCAPED_UNICODE);
     $discountsJson = json_encode($volumeDiscounts, JSON_UNESCAPED_UNICODE);
+    $featureGroups = config('marketing.feature_groups', []);
 @endphp
 
 @section('content')
 <section class="hero">
     <div class="container hero-grid">
         <div>
-            <h1>Tipifica tus soportes PDF <em>en minutos</em>, no en horas</h1>
+            <span class="hero-eyebrow">Facturación hospitalaria · Colombia</span>
+            <h1>Soportes PDF <em>como los pide el MinSalud</em></h1>
             <p class="hero-lead">
                 {{ config('marketing.tagline') }}.
-                Clasifica FEV, HEV, EPI y más con colores, exporta por tipo y divide archivos pesados.
-                Licencia por equipo — ideal para facturación hospitalaria en Colombia.
+                Tipifica cada página, exporta <strong>FEV.pdf</strong>, <strong>HEV.pdf</strong>, <strong>EPI.pdf</strong> y el resto de abreviaturas,
+                y entrega carpetas listas para facturación — sin renombrar a mano.
             </p>
             <div class="hero-actions">
                 <a href="{{ url('/comprar') }}" class="btn btn-primary">Comprar licencia</a>
+                @if(!empty($hasDownload))
+                    <a href="{{ route('site.download') }}" class="btn btn-outline">Descargar instalador</a>
+                @else
+                    <a href="{{ url('/#descargar') }}" class="btn btn-outline">Descargar</a>
+                @endif
                 <a href="https://wa.me/{{ config('marketing.whatsapp') }}?text={{ rawurlencode('Hola, quiero información sobre TipiDV') }}" class="btn btn-outline" target="_blank" rel="noopener">Contactar</a>
             </div>
             <div class="hero-badges">
+                <span class="badge">📋 FEV · HEV · EPI · PDX…</span>
+                <span class="badge">🏥 IPS y hospitales</span>
                 <span class="badge">🖥️ Windows 10/11</span>
-                <span class="badge">🏥 Hospitales y clínicas</span>
-                <span class="badge">💳 Pago seguro Wompi</span>
-                <span class="badge">📧 Activación por correo</span>
+                <span class="badge">💳 Pago Wompi</span>
             </div>
         </div>
-        <div class="hero-card">
-            <h3>Así funciona</h3>
-            <ol class="mini-flow">
-                <li><span class="step-num">1</span> Armas tu paquete en línea (plan + cantidad de PCs)</li>
-                <li><span class="step-num">2</span> Recibes una clave <code>TDV-XXXX-…</code> por email</li>
-                <li><span class="step-num">3</span> Instalas TipiDV en cada equipo de digitalización</li>
-                <li><span class="step-num">4</span> Activas con el mismo correo + clave en cada PC</li>
+        <div class="hero-flow">
+            <div class="hero-flow-header">
+                <span class="hero-flow-tag">Así de simple</span>
+                <h3 class="hero-flow-title">De lote PDF a soportes MinSalud</h3>
+            </div>
+            <ol class="flow-steps">
+                <li class="flow-step">
+                    <div class="flow-step-track" aria-hidden="true">
+                        <span class="flow-step-num">1</span>
+                        <span class="flow-step-line"></span>
+                    </div>
+                    <div class="flow-step-card">
+                        <span class="flow-step-icon" aria-hidden="true">📥</span>
+                        <div class="flow-step-text">
+                            <strong>Carga o escanea</strong>
+                            <p>Abre el lote de soportes PDF o escanea directo desde TipiDV.</p>
+                        </div>
+                    </div>
+                </li>
+                <li class="flow-step">
+                    <div class="flow-step-track" aria-hidden="true">
+                        <span class="flow-step-num">2</span>
+                        <span class="flow-step-line"></span>
+                    </div>
+                    <div class="flow-step-card">
+                        <span class="flow-step-icon" aria-hidden="true">🏷️</span>
+                        <div class="flow-step-text">
+                            <strong>Tipifica cada página</strong>
+                            <p>Marca FEV, HEV, EPI, PDX… con colores y miniaturas.</p>
+                        </div>
+                    </div>
+                </li>
+                <li class="flow-step">
+                    <div class="flow-step-track" aria-hidden="true">
+                        <span class="flow-step-num">3</span>
+                        <span class="flow-step-line"></span>
+                    </div>
+                    <div class="flow-step-card">
+                        <span class="flow-step-icon" aria-hidden="true">⚡</span>
+                        <div class="flow-step-text">
+                            <strong>Procesa la factura</strong>
+                            <p>Prefijo → genera <code>FEV.pdf</code>, <code>HEV.pdf</code>… por carpeta.</p>
+                        </div>
+                    </div>
+                </li>
+                <li class="flow-step flow-step--done">
+                    <div class="flow-step-track" aria-hidden="true">
+                        <span class="flow-step-num flow-step-num--done">✓</span>
+                    </div>
+                    <div class="flow-step-card flow-step-card--done">
+                        <span class="flow-step-icon" aria-hidden="true">🚀</span>
+                        <div class="flow-step-text">
+                            <strong>Sube a tu sistema</strong>
+                            <p>Soportes renombrados listos para facturación hospitalaria.</p>
+                            <span class="flow-step-badge">Listo MinSalud</span>
+                        </div>
+                    </div>
+                </li>
             </ol>
         </div>
     </div>
 </section>
 
-<section id="funciones" class="section-alt">
+@include('site.partials.minsalud-soportes')
+
+<section id="funciones" class="section-band">
     <div class="container">
-        <div class="section-title">
-            <h2>Todo lo que necesitas para digitalizar bien</h2>
-            <p>Reemplaza flujos manuales y digitalizadores lentos con una herramienta pensada para el día a día del hospital.</p>
-        </div>
-        <div class="features">
-            <article class="feature">
-                <div class="feature-icon">📑</div>
-                <h3>Tipificación visual</h3>
-                <p>Panel de tipos con colores, miniaturas y vista previa. Marca cada página sin perder el contexto del lote.</p>
-            </article>
-            <article class="feature">
-                <div class="feature-icon">📤</div>
-                <h3>Exportación inteligente</h3>
-                <p>Genera PDFs separados por tipo, con prefijo de factura y división automática cuando el archivo supera el límite en MB.</p>
-            </article>
-            <article class="feature">
-                <div class="feature-icon">⚙️</div>
-                <h3>Tipos configurables</h3>
-                <p>Define nombres, colores y orden de tus tipificaciones. Adapta TipiDV a tu protocolo interno o a SYC.</p>
-            </article>
-            <article class="feature">
-                <div class="feature-icon">🔐</div>
-                <h3>Licencia por equipo</h3>
-                <p>Paga por cantidad de PCs. Una clave institucional puede cubrir varios equipos del hospital.</p>
-            </article>
-            <article class="feature">
-                <div class="feature-icon">🌐</div>
-                <h3>Modo offline</h3>
-                <p>Validación en línea periódica con gracia de {{ config('licensing.offline_grace_days', 14) }} días sin internet.</p>
-            </article>
-            <article class="feature">
-                <div class="feature-icon">💼</div>
-                <h3>Para hospitales</h3>
-                <p>Facturación con NIT, varios puestos de trabajo y renovación anual sencilla para el área de sistemas.</p>
-            </article>
+        <header class="section-head">
+            <span class="section-eyebrow">Funciones</span>
+            <h2>Todo lo que hace TipiDV</h2>
+            <p>Desde la digitalización hasta la carpeta de salida con los soportes nombrados correctamente.</p>
+        </header>
+
+        <div class="feature-groups">
+            @foreach($featureGroups as $group)
+                <div class="feature-group">
+                    <h3 class="feature-group-title">{{ $group['title'] ?? '' }}</h3>
+                    <div class="features features--compact">
+                        @foreach($group['items'] ?? [] as $feature)
+                            <article class="feature">
+                                <div class="feature-icon">{{ $feature['icon'] ?? '✓' }}</div>
+                                <h4>{{ $feature['title'] ?? '' }}</h4>
+                                <p>{{ $feature['desc'] ?? '' }}</p>
+                            </article>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
         </div>
     </div>
 </section>
 
-<section id="precios" class="section-alt">
+@include('site.partials.download')
+
+<section id="precios" class="section-band section-band--alt">
     <div class="container">
-        <div class="section-title">
-            <h2>Precios claros, sin sorpresas</h2>
-            <p>Licencia por computador. Precios en pesos colombianos (COP). Simula tu paquete antes de pagar.</p>
-        </div>
+        <header class="section-head">
+            <span class="section-eyebrow">Precios</span>
+            <h2>Licencia por equipo, paquetes claros</h2>
+            <p>Pesos colombianos (COP). Simula tu paquete antes de pagar con Wompi.</p>
+        </header>
 
         <div class="form-card pricing-preview">
             <div class="pricing-preview-grid">
@@ -121,7 +168,7 @@
                             <input type="number" id="home-quantity" value="1" min="1" max="{{ $maxQuantity }}" inputmode="numeric">
                             <button type="button" class="qty-btn" id="home-qty-plus" aria-label="Más">+</button>
                         </div>
-                        <small>1 clave TDV para todos los equipos del paquete · máx. {{ $maxQuantity }}</small>
+                        <small>1 clave TDV · máx. {{ $maxQuantity }} equipos</small>
                     </div>
 
                     @if(count($volumeDiscounts) > 0)
@@ -134,16 +181,15 @@
                 </div>
 
                 <div class="pricing-preview-summary">
-                    <p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Tu cotización</p>
+                    <p class="pricing-summary-label">Tu cotización</p>
                     <div id="home-price-lines"></div>
                     <p id="home-price-total" class="price-total">—</p>
                     <p id="home-price-per-unit" class="price-per-unit"></p>
                     <p class="pricing-preview-note">
-                        Incluye activación por correo, soporte y pago seguro con Wompi.
-                        El total final se confirma al crear el pago (calculado en servidor).
+                        Activación por correo · soporte · pago seguro Wompi.
                     </p>
                     <a href="{{ url('/comprar') }}" id="home-checkout-link" class="btn btn-primary" style="width:100%">
-                        Ir a comprar con este paquete
+                        Ir a comprar
                     </a>
                 </div>
             </div>
@@ -162,22 +208,17 @@
                     @endif
                     <h3>{{ $plan['name'] ?? 'Plan' }}</h3>
                     <p style="margin:0;color:var(--muted);font-size:.9rem">
-                        {{ $isAnnual ? '12 meses' : '1 mes' }} · precio por equipo
+                        {{ $isAnnual ? '12 meses' : '1 mes' }} · por equipo
                     </p>
                     <div class="amount">
                         {{ $fmt($unit) }}
                         <small>COP / equipo / {{ $isAnnual ? 'año' : 'mes' }}</small>
                     </div>
                     <ul>
-                        <li>Paquetes de 1 a {{ $maxQuantity }} equipos</li>
+                        <li>1 a {{ $maxQuantity }} equipos por paquete</li>
                         <li>1 clave para todo el paquete</li>
-                        <li>Descuentos automáticos por volumen</li>
-                        <li>Soporte por WhatsApp y email</li>
-                        @if($isAnnual)
-                            <li>Mejor valor vs plan mensual</li>
-                        @else
-                            <li>Ideal para probar o equipos temporales</li>
-                        @endif
+                        <li>Descuentos por volumen</li>
+                        <li>Soporte WhatsApp y email</li>
                     </ul>
                     <a href="{{ url('/comprar') }}?plan={{ $plan['period'] ?? 'annual' }}" class="btn {{ $featured ? 'btn-primary' : 'btn-outline' }}" style="width:100%">
                         Elegir plan
@@ -185,47 +226,52 @@
                 </article>
             @endforeach
         </div>
-        <p style="text-align:center;color:var(--muted);font-size:.9rem;margin-top:24px">
-            ¿Necesitas más de {{ $maxQuantity }} equipos o facturación especial?
+        <p class="section-footnote">
+            ¿Más de {{ $maxQuantity }} equipos?
             <a href="https://wa.me/{{ config('marketing.whatsapp') }}">Escríbenos por WhatsApp</a>.
         </p>
     </div>
 </section>
 
-<section id="faq">
+<section id="faq" class="section-band">
     <div class="container">
-        <div class="section-title">
+        <header class="section-head">
+            <span class="section-eyebrow">FAQ</span>
             <h2>Preguntas frecuentes</h2>
-        </div>
+        </header>
         <div class="faq">
             <details>
                 <summary>¿Qué es TipiDV?</summary>
-                <p>Es una aplicación Windows para clasificar (tipificar) soportes PDF de facturación hospitalaria: separa por tipo, exporta archivos listos para cargar y reduce el trabajo manual del digitalizador.</p>
+                <p>Aplicación Windows para tipificar soportes PDF de facturación hospitalaria según las abreviaturas del MinSalud (FEV, HEV, EPI…), exportar un archivo por tipo y organizarlos por factura.</p>
+            </details>
+            <details>
+                <summary>¿Cumple con el nombramiento del MinSalud?</summary>
+                <p>Sí. TipiDV incluye la plantilla con las 15 abreviaturas (FEV, HEV, EPI, PDX, DQX, RAN, CRC, TAP, FAT, FMO, OPF, HAU, HAO, HAM, PDE) y genera archivos como <code>FEV.pdf</code>, <code>HEV.pdf</code>, etc. Puedes ajustar tipos desde Configuración.</p>
             </details>
             <details>
                 <summary>¿Cuántos equipos cubre una licencia?</summary>
-                <p>Armas un paquete de 1 a {{ $maxQuantity }} PCs. Recibes <strong>una clave TDV</strong> válida para todos los equipos pagados. En cada PC usas el mismo correo y la misma clave. Si necesitas más equipos después, puedes agregarlos desde el checkout.</p>
+                <p>De 1 a {{ $maxQuantity }} PCs con <strong>una clave TDV</strong>. Mismo correo y clave en cada equipo. Puedes agregar equipos después desde el checkout.</p>
             </details>
             <details>
-                <summary>¿Cómo recibo la clave de activación?</summary>
-                <p>Tras el pago aprobado en Wompi, enviamos un correo con tu clave <code>TDV-XXXX-XXXX-XXXX</code> y cuántos equipos incluye. Actívala en cada PC con el mismo correo.</p>
+                <summary>¿Cómo descargo e instalo?</summary>
+                <p>Descarga <strong>TipiDV-Setup.exe</strong> en <a href="{{ url('/#descargar') }}">Descargar</a> o en el correo tras comprar. Windows 10/11, 64 bits.</p>
             </details>
             <details>
                 <summary>¿Funciona sin internet?</summary>
-                <p>Sí, con validación periódica. Si pierdes conexión, puedes seguir trabajando hasta {{ config('licensing.offline_grace_days', 14) }} días mientras se restablece la red.</p>
+                <p>Sí, con validación periódica y {{ config('licensing.offline_grace_days', 14) }} días de gracia sin conexión.</p>
             </details>
             <details>
                 <summary>¿Reemplaza SYC u otros digitalizadores?</summary>
-                <p>TipiDV se enfoca en la tipificación y exportación de PDFs. Muchos hospitales lo usan junto a su flujo actual o como reemplazo del paso de clasificación manual.</p>
+                <p>TipiDV se enfoca en tipificación y exportación con nombres MinSalud. Muchas IPS lo usan junto al flujo actual o reemplazando la clasificación manual.</p>
             </details>
         </div>
     </div>
 </section>
 
 <section class="cta-band">
-    <div class="container" style="padding:48px 0">
-        <h2>¿Listo para ordenar tus soportes?</h2>
-        <p>Empieza hoy — activación en minutos después del pago.</p>
+    <div class="container cta-band-inner">
+        <h2>¿Listo para cumplir con tus soportes?</h2>
+        <p>Instala TipiDV, activa tu licencia y exporta con las abreviaturas correctas.</p>
         <a href="{{ url('/comprar') }}" class="btn btn-cta">Comprar ahora</a>
     </div>
 </section>
@@ -293,10 +339,9 @@
         linesEl.innerHTML = html;
         totalEl.textContent = fmtCop(q.total) + ' COP';
         const perUnit = Math.round(q.total / q.qty);
-        perUnitEl.innerHTML = `Equivale a <strong>${fmtCop(perUnit)} COP</strong> por equipo / ${isAnnual ? 'año' : 'mes'}`;
+        perUnitEl.innerHTML = `Equivale a <strong>${fmtCop(perUnit)} COP</strong> / equipo / ${isAnnual ? 'año' : 'mes'}`;
 
-        const params = new URLSearchParams({ plan: period, quantity: String(q.qty) });
-        checkoutLink.href = comprarBase + '?' + params.toString();
+        checkoutLink.href = comprarBase + '?' + new URLSearchParams({ plan: period, quantity: String(q.qty) });
     }
 
     tabs.forEach(btn => btn.addEventListener('click', () => {

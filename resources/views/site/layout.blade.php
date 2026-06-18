@@ -81,7 +81,9 @@
                 <span class="nav-toggle-icon" aria-hidden="true"></span>
             </button>
             <nav id="site-nav" class="nav" :class="{ 'is-open': menuOpen }" aria-label="Principal" @click.outside="menuOpen = false">
+                <a href="{{ url('/#soportes') }}" @click="menuOpen = false">Soportes MinSalud</a>
                 <a href="{{ url('/#funciones') }}" @click="menuOpen = false">Funciones</a>
+                <a href="{{ url('/#descargar') }}" @click="menuOpen = false">Descargar</a>
                 <a href="{{ url('/#precios') }}" @click="menuOpen = false">Precios</a>
                 <a href="{{ url('/#faq') }}" @click="menuOpen = false">FAQ</a>
                 <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" @click="menuOpen = false">Contacto</a>
@@ -95,6 +97,12 @@
     </header>
 
     <main>
+        @if (session('status'))
+            <div class="site-flash site-flash--success" role="alert">{{ session('status') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="site-flash site-flash--error" role="alert">{{ session('error') }}</div>
+        @endif
         @yield('content')
     </main>
 
@@ -113,7 +121,8 @@
             <div>
                 <strong class="footer-heading">Producto</strong>
                 <a href="{{ url('/comprar') }}">Comprar</a><br>
-                <a href="{{ url('/#funciones') }}">Características</a><br>
+                <a href="{{ url('/#soportes') }}">Soportes MinSalud</a><br>
+                <a href="{{ url('/#descargar') }}">Descargar</a><br>
                 <a href="{{ url('/#precios') }}">Precios</a>
             </div>
             <div>

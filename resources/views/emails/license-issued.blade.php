@@ -23,22 +23,16 @@
         </p>
     @endif
 
-    @if(!empty($downloadUrl))
+        @if(!empty($downloadUrl))
         <p style="margin:20px 0;text-align:center;">
-            <a href="{{ $downloadUrl }}" style="display:inline-block;background:#f26c20;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:700;">
+            <a href="{{ route('site.download') }}" style="display:inline-block;background:#f26c20;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:700;">
                 Descargar TipiDV para Windows
             </a>
         </p>
-        @if(!empty($portableDownloadUrl))
-            <p style="text-align:center;font-size:13px;color:#6b7280;margin:0 0 16px;">
-                También disponible en versión portable:
-                <a href="{{ $portableDownloadUrl }}" style="color:#f26c20;">TipiDV-Portable.zip</a>
-            </p>
-        @endif
     @else
         <p style="background:#f3f4f6;padding:12px 14px;border-radius:4px;font-size:14px;">
-            Descarga el instalador desde el portal:
-            <a href="{{ $portalUrl }}" style="color:#f26c20;">{{ $portalUrl }}</a>
+            Descarga el instalador desde el portal (sección Descargar):
+            <a href="{{ $portalUrl }}/#descargar" style="color:#f26c20;">{{ $portalUrl }}</a>
         </p>
     @endif
 

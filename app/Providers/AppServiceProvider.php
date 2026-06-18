@@ -17,8 +17,10 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer(['site.*', 'emails.license-issued'], function ($view): void {
             $downloads = app(WindowsDownloadService::class);
+            $release = $downloads->release();
             $view->with('downloadUrl', $downloads->setupUrl());
-            $view->with('portableDownloadUrl', $downloads->portableUrl());
+            $view->with('releaseVersion', $release['version'] ?? $release['tag'] ?? null);
+            $view->with('hasDownload', $downloads->setupUrl() !== null);
         });
     }
 }

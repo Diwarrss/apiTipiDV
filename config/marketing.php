@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'site_name' => env('MARKETING_SITE_NAME', 'TipiDV'),
-    'tagline' => env('MARKETING_TAGLINE', 'Tipificador de soportes PDF para hospitales'),
+    'tagline' => env('MARKETING_TAGLINE', 'Soportes PDF nombrados como exige el Ministerio de Salud'),
     'contact_email' => env('MARKETING_CONTACT_EMAIL', 'dialvar30@gmail.com'),
     'contact_phone' => env('MARKETING_CONTACT_PHONE', '+57 313 245 8975'),
     'whatsapp' => env('MARKETING_WHATSAPP', '573132458975'),
@@ -46,11 +46,69 @@ return [
         'title' => env('MARKETING_SEO_TITLE', 'TipiDV — Tipificador PDF para hospitales y clínicas'),
         'description' => env(
             'MARKETING_SEO_DESCRIPTION',
-            'TipiDV clasifica y exporta soportes PDF por tipo (FEV, HEV, EPI…). Licencia por equipo, pago en línea con Wompi, activación en minutos. Ideal para facturación hospitalaria en Colombia.'
+            'TipiDV tipifica y exporta soportes PDF con las abreviaturas del MinSalud (FEV, HEV, EPI, PDX…). Instalador Windows, licencia por equipo, pago con Wompi. Para facturación hospitalaria en Colombia.'
         ),
         'keywords' => env(
             'MARKETING_SEO_KEYWORDS',
-            'tipificador PDF, hospital, soportes facturación, SYC, digitalizador, TipiDV, Colombia'
+            'soportes MinSalud, tipificador PDF, FEV HEV EPI, hospital, facturación hospitalaria, digitalizador, TipiDV, Colombia'
         ),
+    ],
+
+    /**
+     * Tabla de nombramiento de soportes (MinSalud) — vigente desde jun 2026.
+     * TipiDV exporta un PDF por abreviatura: FEV.pdf, HEV.pdf, etc.
+     */
+    'support_types_effective' => '1 de junio de 2026',
+    'support_types' => [
+        ['code' => 'FEV', 'name' => 'Factura'],
+        ['code' => 'HEV', 'name' => 'Historia clínica ambulatoria, hospitalización u observación'],
+        ['code' => 'EPI', 'name' => 'Epicrisis'],
+        ['code' => 'PDX', 'name' => 'Laboratorio, rayos X, espirometrías, ecos y resultados ambulatorios u hospitalarios'],
+        ['code' => 'DQX', 'name' => 'Descripción quirúrgica'],
+        ['code' => 'RAN', 'name' => 'Record de anestesia'],
+        ['code' => 'CRC', 'name' => 'Firma del usuario'],
+        ['code' => 'TAP', 'name' => 'Traslado asistencial de pacientes'],
+        ['code' => 'FAT', 'name' => 'Factura SOAT / ADRES con división de cuentas'],
+        ['code' => 'FMO', 'name' => 'Factura de material de osteosíntesis'],
+        ['code' => 'OPF', 'name' => 'Orden médica'],
+        ['code' => 'HAU', 'name' => 'Historia clínica de urgencias'],
+        ['code' => 'HAO', 'name' => 'Evolución odontología u odontograma'],
+        ['code' => 'HAM', 'name' => 'Hoja de administración de medicamentos'],
+        ['code' => 'PDE', 'name' => 'Autorización ambulatoria o ingreso médico'],
+    ],
+
+    /** Grupos de funciones en la landing (#funciones). */
+    'feature_groups' => [
+        [
+            'title' => 'Captura',
+            'items' => [
+                ['icon' => '📄', 'title' => 'PDFs en lote', 'desc' => 'Carga uno o varios archivos; cada página queda como miniatura en orden.'],
+                ['icon' => '🖨️', 'title' => 'Escaneo directo', 'desc' => 'Escáner WIA/TWAIN (HP, Canon, Epson…) sin salir de la app.'],
+            ],
+        ],
+        [
+            'title' => 'Tipificación',
+            'items' => [
+                ['icon' => '🎨', 'title' => 'Panel visual', 'desc' => 'Tipos con color, vista previa con zoom y miniaturas etiquetadas.'],
+                ['icon' => '🏷️', 'title' => 'Tipos MinSalud', 'desc' => 'FEV, HEV, EPI, PDX… configurables: nombre, color, orden y activo/inactivo.'],
+                ['icon' => '⚠️', 'title' => 'Sin tipificar', 'desc' => 'Bloquea la exportación si quedan páginas sin clasificar.'],
+            ],
+        ],
+        [
+            'title' => 'Exportación',
+            'items' => [
+                ['icon' => '📤', 'title' => 'Un PDF por soporte', 'desc' => 'Genera FEV.pdf, HEV.pdf… fusionando páginas en orden de carga.'],
+                ['icon' => '📁', 'title' => 'Carpeta por factura', 'desc' => 'Prefijo de factura → Documentos\\SALIDA\\{prefijo}\\ listo para cargar.'],
+                ['icon' => '✂️', 'title' => 'División por MB', 'desc' => 'Parte archivos grandes cuando superan el límite del sistema.'],
+            ],
+        ],
+        [
+            'title' => 'Instalación y licencia',
+            'items' => [
+                ['icon' => '💻', 'title' => 'Instalador Setup.exe', 'desc' => 'Windows 10/11 · instalación guiada en pocos clics.'],
+                ['icon' => '🔐', 'title' => 'Multi-equipo', 'desc' => 'Una clave TDV para varios PCs del hospital con el mismo correo.'],
+                ['icon' => '🌐', 'title' => 'Gracia offline', 'desc' => 'Validación en línea periódica; sigues trabajando si cae la red.'],
+            ],
+        ],
     ],
 ];

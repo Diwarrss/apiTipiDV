@@ -28,7 +28,11 @@ final class SiteController extends Controller
 
     public function comprar(): View
     {
-        return view('site.comprar');
+        return view('site.comprar', [
+            'plans' => $this->plans->plans(),
+            'maxQuantity' => $this->pricing->maxQuantity(),
+            'volumeDiscounts' => $this->pricing->volumeDiscounts(),
+        ]);
     }
 
     public function gracias(): View

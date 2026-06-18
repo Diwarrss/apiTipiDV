@@ -41,7 +41,7 @@ final class ReleaseStatusCommand extends Command
         );
 
         $this->newLine();
-        $this->comment('Si Setup tiene URL → botón Descargar en el sitio y en el correo de licencia.');
+        $this->comment('Si hay Setup URL → botón Descargar en /#descargar, /descargar y correo de licencia.');
 
         return self::SUCCESS;
     }

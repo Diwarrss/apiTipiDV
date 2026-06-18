@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [SiteController::class, 'home'])->name('site.home');
 Route::get('/comprar', [SiteController::class, 'comprar'])->name('site.comprar');
 Route::get('/gracias', [SiteController::class, 'gracias'])->name('site.gracias');
+Route::get('/descargar', [DownloadController::class, 'setup'])->name('site.download');
 Route::get('/robots.txt', [SiteController::class, 'robots']);
 Route::get('/sitemap.xml', [SiteController::class, 'sitemap']);
 
