@@ -6,6 +6,7 @@
     $description = trim($__env->yieldContent('meta_description')) ?: ($seo['description'] ?? '');
     $canonical = url()->current();
     $ogImage = asset('images/tipidv-logo.png');
+    $whatsappUrl = 'https://wa.me/' . config('marketing.whatsapp') . '?text=' . rawurlencode('Hola, quiero información sobre TipiDV');
 @endphp
 <!DOCTYPE html>
 <html lang="es-CO">
@@ -36,12 +37,8 @@
 
     <link rel="icon" href="{{ asset('images/tipidv-logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ asset('images/tipidv-logo.png') }}">
-    @php
-        $siteCss = public_path('css/site.css');
-        $siteJs = public_path('js/site-theme.js');
-        $assetVer = fn (string $path) => file_exists($path) ? (string) filemtime($path) : '1';
-    @endphp
-    <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ $assetVer($siteCss) }}">
+    @vite(['resources/css/site.css', 'resources/js/app.js'])
+    @livewireStyles
     @stack('head')
     <script type="application/ld+json">
     {!! json_encode([
@@ -67,24 +64,32 @@
     </script>
 </head>
 <body>
-    <header class="site-header">
+    <header class="site-header" x-data="{ menuOpen: false }" @keydown.escape.window="menuOpen = false">
         <div class="container inner">
             <a href="{{ url('/') }}" class="logo" aria-label="TipiDV inicio">
                 <img src="{{ asset('images/tipidv-logo.png') }}" alt="" class="logo-mark" width="44" height="44">
                 <span class="logo-wordmark">Tipi<span>DV</span></span>
             </a>
-            <nav class="nav" aria-label="Principal">
-                <a href="{{ url('/#funciones') }}">Funciones</a>
-                <a href="{{ url('/#precios') }}">Precios</a>
-                <a href="{{ url('/#faq') }}">FAQ</a>
-                @if(!empty($downloadUrl))
-                    <a href="{{ $downloadUrl }}" rel="noopener">Descargar</a>
-                @endif
+            <button
+                type="button"
+                class="nav-toggle"
+                @click="menuOpen = !menuOpen"
+                :aria-expanded="menuOpen.toString()"
+                aria-controls="site-nav"
+                aria-label="Abrir menú de navegación"
+            >
+                <span class="nav-toggle-icon" aria-hidden="true"></span>
+            </button>
+            <nav id="site-nav" class="nav" :class="{ 'is-open': menuOpen }" aria-label="Principal" @click.outside="menuOpen = false">
+                <a href="{{ url('/#funciones') }}" @click="menuOpen = false">Funciones</a>
+                <a href="{{ url('/#precios') }}" @click="menuOpen = false">Precios</a>
+                <a href="{{ url('/#faq') }}" @click="menuOpen = false">FAQ</a>
+                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" @click="menuOpen = false">Contacto</a>
                 <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro u oscuro" title="Tema claro / oscuro">
                     <span class="icon-sun" aria-hidden="true">☀️</span>
                     <span class="icon-moon" aria-hidden="true">🌙</span>
                 </button>
-                <a href="{{ url('/comprar') }}" class="btn btn-primary">Comprar licencia</a>
+                <a href="{{ url('/comprar') }}" class="btn btn-primary" @click="menuOpen = false">Comprar licencia</a>
             </nav>
         </div>
     </header>
@@ -109,16 +114,14 @@
                 <strong class="footer-heading">Producto</strong>
                 <a href="{{ url('/comprar') }}">Comprar</a><br>
                 <a href="{{ url('/#funciones') }}">Características</a><br>
-                @if(!empty($downloadUrl))
-                    <a href="{{ $downloadUrl }}">Instalador Windows</a>
-                @endif
+                <a href="{{ url('/#precios') }}">Precios</a>
             </div>
             <div>
                 <strong class="footer-heading">Contacto</strong>
                 <a href="mailto:{{ config('marketing.contact_email') }}">{{ config('marketing.contact_email') }}</a><br>
                 <a href="tel:{{ preg_replace('/\s+/', '', config('marketing.contact_phone')) }}">{{ config('marketing.contact_phone') }}</a><br>
                 @if(config('marketing.whatsapp'))
-                    <a href="https://wa.me/{{ config('marketing.whatsapp') }}" target="_blank" rel="noopener">WhatsApp</a>
+                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener">WhatsApp</a>
                 @endif
             </div>
         </div>
@@ -128,6 +131,7 @@
             · Colombia
         </div>
     </footer>
+    @livewireScripts
     @stack('scripts')
 </body>
 </html>

@@ -21,11 +21,7 @@
             </p>
             <div class="hero-actions">
                 <a href="{{ url('/comprar') }}" class="btn btn-primary">Comprar licencia</a>
-                @if(!empty($downloadUrl))
-                    <a href="{{ $downloadUrl }}" class="btn btn-outline" rel="noopener">Descargar prueba</a>
-                @else
-                    <a href="https://wa.me/{{ config('marketing.whatsapp') }}?text=Hola,%20quiero%20información%20sobre%20TipiDV" class="btn btn-outline" target="_blank" rel="noopener">Solicitar demo</a>
-                @endif
+                <a href="https://wa.me/{{ config('marketing.whatsapp') }}?text={{ rawurlencode('Hola, quiero información sobre TipiDV') }}" class="btn btn-outline" target="_blank" rel="noopener">Contactar</a>
             </div>
             <div class="hero-badges">
                 <span class="badge">🖥️ Windows 10/11</span>

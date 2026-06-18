@@ -12,7 +12,14 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['system-ui', 'Segoe UI', 'Roboto', ...defaultTheme.fontFamily.sans],
+            },
+            colors: {
+                tipidv: {
+                    orange: '#f26c20',
+                    'orange-dark': '#d95a14',
+                    green: '#247a2b',
+                },
             },
         },
     },
