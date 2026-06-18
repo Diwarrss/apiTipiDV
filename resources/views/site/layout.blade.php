@@ -10,7 +10,7 @@
 <!DOCTYPE html>
 <html lang="es-CO">
 <head>
-    <script src="{{ asset('js/site-theme.js') }}"></script>
+    <script src="{{ asset('js/site-theme.js') }}?v={{ file_exists(public_path('js/site-theme.js')) ? filemtime(public_path('js/site-theme.js')) : '1' }}"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $pageTitle }}</title>
@@ -36,7 +36,12 @@
 
     <link rel="icon" href="{{ asset('images/tipidv-logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ asset('images/tipidv-logo.png') }}">
-    <link rel="stylesheet" href="{{ asset('css/site.css') }}">
+    @php
+        $siteCss = public_path('css/site.css');
+        $siteJs = public_path('js/site-theme.js');
+        $assetVer = fn (string $path) => file_exists($path) ? (string) filemtime($path) : '1';
+    @endphp
+    <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ $assetVer($siteCss) }}">
     @stack('head')
     <script type="application/ld+json">
     {!! json_encode([

@@ -466,6 +466,68 @@ section { padding: 56px 0; }
     font-size: .85rem;
 }
 .tab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+/* Selector de plan (home + comprar) */
+.plan-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 4px;
+}
+.plan-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 16px 18px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--input-bg);
+    color: var(--text-body);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    min-height: 88px;
+}
+.plan-option:hover {
+    border-color: var(--orange);
+    background: var(--surface-raised, var(--bg-elevated));
+}
+.plan-option.active {
+    border-color: var(--orange);
+    background: var(--icon-bg);
+    box-shadow: 0 0 0 3px var(--orange-glow);
+}
+.plan-option-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    line-height: 1.25;
+}
+.plan-option.active .plan-option-name { color: var(--orange-dark, var(--orange)); }
+.plan-option-price {
+    font-size: .88rem;
+    color: var(--muted);
+    line-height: 1.35;
+}
+.plan-option-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    background: var(--orange);
+    color: #fff;
+}
+.plan-option:not(.active) .plan-option-badge {
+    background: var(--bg-elevated);
+    color: var(--orange);
+    border: 1px solid var(--orange-glow);
+}
 .alert-error {
     background: var(--alert-bg);
     color: var(--alert-text);

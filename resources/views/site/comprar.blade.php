@@ -8,6 +8,7 @@
     $defaultQuantity = max(1, min($maxQuantity, (int) request('quantity', 1)));
     $plansJson = json_encode($plans, JSON_UNESCAPED_UNICODE);
     $discountsJson = json_encode($volumeDiscounts, JSON_UNESCAPED_UNICODE);
+    $fmt = fn (float $n) => '$' . number_format($n, 0, ',', '.');
 @endphp
 
 @section('content')
@@ -31,13 +32,22 @@
 
                     <div class="field">
                         <span class="field-label">Plan de licencia</span>
-                        <div class="tabs" role="tablist" aria-label="Plan">
+                        <div class="plan-picker" role="tablist" aria-label="Plan">
                             @foreach($plans as $plan)
-                                <button type="button" class="tab {{ ($plan['period'] ?? '') === $defaultPlan ? 'active' : '' }}"
+                                @php
+                                    $isAnnual = ($plan['period'] ?? '') === 'annual' || (int) ($plan['billing_months'] ?? 0) >= 12;
+                                    $isActive = ($plan['period'] ?? '') === $defaultPlan;
+                                @endphp
+                                <button type="button"
+                                    class="plan-option tab {{ $isActive ? 'active' : '' }}"
                                     data-period="{{ $plan['period'] }}"
                                     data-uuid="{{ $plan['uuid'] ?? '' }}"
                                     data-unit="{{ (float) ($plan['value_cop'] ?? 0) }}">
-                                    {{ $plan['name'] ?? $plan['period'] }}
+                                    <span class="plan-option-name">{{ $plan['name'] ?? $plan['period'] }}</span>
+                                    <span class="plan-option-price">{{ $fmt((float) ($plan['value_cop'] ?? 0)) }} / equipo / {{ $isAnnual ? 'año' : 'mes' }}</span>
+                                    @if($isAnnual)
+                                        <span class="plan-option-badge">Recomendado</span>
+                                    @endif
                                 </button>
                             @endforeach
                         </div>
@@ -188,7 +198,7 @@
     const maxQuantity = {{ (int) $maxQuantity }};
     const fmtCop = (n) => '$' + Math.round(n).toLocaleString('es-CO');
 
-    const tabs = document.querySelectorAll('.tab');
+    const tabs = document.querySelectorAll('.plan-picker .plan-option');
     const errorEl = document.getElementById('checkout-error');
     const priceLinesEl = document.getElementById('price-lines');
     const priceEl = document.getElementById('selected-price');
@@ -349,7 +359,7 @@
     }
 
     function refreshPrice() {
-        const activeTab = document.querySelector('.tab.active');
+        const activeTab = document.querySelector('.plan-picker .plan-option.active');
         const plan = planForPeriod(activeTab?.dataset.period);
         const unit = parseFloat(activeTab?.dataset.unit || plan?.value_cop || 0);
         const q = quote(unit, clampQty(), getPurchaseType());
@@ -373,7 +383,7 @@
         refreshPrice();
     }
 
-    const initial = document.querySelector('.tab.active') || tabs[0];
+    const initial = document.querySelector('.plan-picker .plan-option.active') || tabs[0];
     if (initial) selectTab(initial);
 
     tabs.forEach(btn => btn.addEventListener('click', () => selectTab(btn)));
@@ -444,7 +454,7 @@
         btn.disabled = true;
         btn.textContent = 'Preparando pago…';
 
-        const activeTab = document.querySelector('.tab.active');
+        const activeTab = document.querySelector('.plan-picker .plan-option.active');
         const plan = planForPeriod(activeTab?.dataset.period);
         const productId = selectedUuid || plan?.uuid;
         const pType = getPurchaseType();

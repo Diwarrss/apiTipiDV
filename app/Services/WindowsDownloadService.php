@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * URL del instalador Windows: archivo guardado por webhook > GitHub API > .env.
+ *
+ * Laravel 11: el disco "local" vive en storage/app/private/
+ * → storage/app/private/windows-release.json (no en storage/app/ directo).
  */
 final class WindowsDownloadService
 {

@@ -98,17 +98,21 @@
             <div class="pricing-preview-grid">
                 <div class="pricing-preview-controls">
                     <p class="pricing-plan-hint" style="margin-top:0;font-weight:600;color:var(--text-strong)">Elige el plan</p>
-                    <div class="tabs" role="tablist" id="home-plan-tabs">
+                    <div class="plan-picker" role="tablist" id="home-plan-tabs" aria-label="Plan">
                         @foreach($plans as $plan)
-                            @php $isAnnual = ($plan['period'] ?? '') === 'annual'; @endphp
+                            @php
+                                $isAnnual = ($plan['period'] ?? '') === 'annual' || (int) ($plan['billing_months'] ?? 0) >= 12;
+                                $isActive = ($plan['period'] ?? '') === $defaultPlan;
+                            @endphp
                             <button type="button"
-                                class="tab {{ ($plan['period'] ?? '') === $defaultPlan ? 'active' : '' }}"
+                                class="plan-option tab {{ $isActive ? 'active' : '' }}"
                                 data-period="{{ $plan['period'] }}"
                                 data-unit="{{ (float) ($plan['value_cop'] ?? 0) }}"
                                 data-billing="{{ (int) ($plan['billing_months'] ?? 1) }}">
-                                {{ $plan['name'] ?? $plan['period'] }}
+                                <span class="plan-option-name">{{ $plan['name'] ?? $plan['period'] }}</span>
+                                <span class="plan-option-price">{{ $fmt((float) ($plan['value_cop'] ?? 0)) }} / equipo / {{ $isAnnual ? 'año' : 'mes' }}</span>
                                 @if($isAnnual)
-                                    <span style="display:block;font-size:.7rem;font-weight:500;opacity:.9">Recomendado</span>
+                                    <span class="plan-option-badge">Recomendado</span>
                                 @endif
                             </button>
                         @endforeach
@@ -240,7 +244,7 @@
     const comprarBase = @json(url('/comprar'));
     const fmtCop = (n) => '$' + Math.round(n).toLocaleString('es-CO');
 
-    const tabs = document.querySelectorAll('#home-plan-tabs .tab');
+    const tabs = document.querySelectorAll('#home-plan-tabs .plan-option, #home-plan-tabs .tab');
     const qtyInput = document.getElementById('home-quantity');
     const linesEl = document.getElementById('home-price-lines');
     const totalEl = document.getElementById('home-price-total');
@@ -271,7 +275,9 @@
     }
 
     function activeTab() {
-        return document.querySelector('#home-plan-tabs .tab.active') || tabs[0];
+        return document.querySelector('#home-plan-tabs .plan-option.active')
+            || document.querySelector('#home-plan-tabs .tab.active')
+            || tabs[0];
     }
 
     function refresh() {
