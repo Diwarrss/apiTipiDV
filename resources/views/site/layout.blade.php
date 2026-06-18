@@ -22,6 +22,7 @@
 <html lang="es-CO">
 <head>
     <script src="{{ asset('js/site-theme.js') }}?v={{ file_exists(public_path('js/site-theme.js')) ? filemtime(public_path('js/site-theme.js')) : '1' }}"></script>
+    <script src="{{ asset('js/site-nav.js') }}?v={{ file_exists(public_path('js/site-nav.js')) ? filemtime(public_path('js/site-nav.js')) : '1' }}"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $pageTitle }}</title>
@@ -75,7 +76,7 @@
     @endif
 </head>
 <body>
-    <header class="site-header" x-data="{ menuOpen: false }" @keydown.escape.window="menuOpen = false">
+    <header class="site-header">
         <div class="container inner">
             <a href="{{ url('/') }}" class="logo" aria-label="TipiDV inicio">
                 <img src="{{ asset('images/tipidv-logo.png') }}" alt="Logo TipiDV" class="logo-mark" width="44" height="44">
@@ -84,26 +85,25 @@
             <button
                 type="button"
                 class="nav-toggle"
-                @click="menuOpen = !menuOpen"
-                :aria-expanded="menuOpen.toString()"
+                aria-expanded="false"
                 aria-controls="site-nav"
                 aria-label="Abrir menú de navegación"
             >
                 <span class="nav-toggle-icon" aria-hidden="true"></span>
             </button>
-            <nav id="site-nav" class="nav" :class="{ 'is-open': menuOpen }" aria-label="Principal" @click.outside="menuOpen = false">
-                <a href="{{ url('/#casos') }}" @click="menuOpen = false">Casos de uso</a>
-                <a href="{{ url('/#soportes') }}" @click="menuOpen = false">MinSalud</a>
-                <a href="{{ url('/#funciones') }}" @click="menuOpen = false">Funciones</a>
-                <a href="{{ url('/#descargar') }}" @click="menuOpen = false">Descargar</a>
-                <a href="{{ url('/#precios') }}" @click="menuOpen = false">Precios</a>
-                <a href="{{ url('/#faq') }}" @click="menuOpen = false">FAQ</a>
-                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" @click="menuOpen = false">Contacto</a>
+            <nav id="site-nav" class="nav" aria-label="Principal">
+                <a href="{{ url('/#casos') }}">Casos de uso</a>
+                <a href="{{ url('/#soportes') }}">MinSalud</a>
+                <a href="{{ url('/#funciones') }}">Funciones</a>
+                <a href="{{ url('/#descargar') }}">Descargar</a>
+                <a href="{{ url('/#precios') }}">Precios</a>
+                <a href="{{ url('/#faq') }}">FAQ</a>
+                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener">Contacto</a>
                 <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro u oscuro" title="Tema claro / oscuro">
                     <span class="icon-sun" aria-hidden="true">☀️</span>
                     <span class="icon-moon" aria-hidden="true">🌙</span>
                 </button>
-                <a href="{{ url('/comprar') }}" class="btn btn-primary" @click="menuOpen = false">Comprar licencia</a>
+                <a href="{{ url('/comprar') }}" class="btn btn-primary">Comprar licencia</a>
             </nav>
         </div>
     </header>
@@ -119,38 +119,48 @@
     </main>
 
     <footer class="site-footer">
-        <div class="container footer-grid">
-            <div>
-                <a href="{{ url('/') }}" class="logo" aria-label="TipiDV inicio">
-                    <img src="{{ asset('images/tipidv-logo.png') }}" alt="Logo TipiDV" class="logo-mark" width="44" height="44">
-                    <span class="logo-wordmark">Tipi<span>DV</span></span>
-                </a>
-                <p style="margin:12px 0 0">{{ config('marketing.tagline') }}</p>
-                <p style="margin:8px 0 0;font-size:.85rem">
-                    Por <a href="{{ config('marketing.author_url') }}" target="_blank" rel="noopener me">{{ config('marketing.author') }}</a>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="{{ url('/') }}" class="logo" aria-label="TipiDV inicio">
+                        <img src="{{ asset('images/tipidv-logo.png') }}" alt="Logo TipiDV" class="logo-mark" width="44" height="44">
+                        <span class="logo-wordmark">Tipi<span>DV</span></span>
+                    </a>
+                    <p class="footer-tagline">{{ config('marketing.tagline') }}</p>
+                    <p class="footer-author">
+                        Por <a href="{{ config('marketing.author_url') }}" target="_blank" rel="noopener me">{{ config('marketing.author') }}</a>
+                    </p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <strong class="footer-heading">Producto</strong>
+                        <ul class="footer-links">
+                            <li><a href="{{ url('/comprar') }}">Comprar</a></li>
+                            <li><a href="{{ url('/#casos') }}">Casos de uso</a></li>
+                            <li><a href="{{ url('/#soportes') }}">MinSalud</a></li>
+                            <li><a href="{{ url('/#descargar') }}">Descargar</a></li>
+                            <li><a href="{{ url('/#precios') }}">Precios</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <strong class="footer-heading">Contacto</strong>
+                        <ul class="footer-links">
+                            <li><a href="mailto:{{ config('marketing.contact_email') }}">{{ config('marketing.contact_email') }}</a></li>
+                            <li><a href="tel:{{ preg_replace('/\s+/', '', config('marketing.contact_phone')) }}">{{ config('marketing.contact_phone') }}</a></li>
+                            @if(config('marketing.whatsapp'))
+                                <li><a href="{{ $whatsappUrl }}" target="_blank" rel="noopener">WhatsApp</a></li>
+                            @endif
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copy">
+                    &copy; {{ date('Y') }} {{ $siteName }} ·
+                    <a href="{{ config('marketing.author_url') }}">{{ config('marketing.author') }}</a>
+                    · Colombia
                 </p>
             </div>
-            <div>
-                <strong class="footer-heading">Producto</strong>
-                <a href="{{ url('/comprar') }}">Comprar</a><br>
-                <a href="{{ url('/#casos') }}">Casos de uso</a><br>
-                <a href="{{ url('/#soportes') }}">MinSalud</a><br>
-                <a href="{{ url('/#descargar') }}">Descargar</a><br>
-                <a href="{{ url('/#precios') }}">Precios</a>
-            </div>
-            <div>
-                <strong class="footer-heading">Contacto</strong>
-                <a href="mailto:{{ config('marketing.contact_email') }}">{{ config('marketing.contact_email') }}</a><br>
-                <a href="tel:{{ preg_replace('/\s+/', '', config('marketing.contact_phone')) }}">{{ config('marketing.contact_phone') }}</a><br>
-                @if(config('marketing.whatsapp'))
-                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener">WhatsApp</a>
-                @endif
-            </div>
-        </div>
-        <div class="container footer-bottom">
-            &copy; {{ date('Y') }} {{ $siteName }} ·
-            <a href="{{ config('marketing.author_url') }}">{{ config('marketing.author') }}</a>
-            · Colombia
         </div>
     </footer>
     @livewireScripts
