@@ -21,9 +21,10 @@ final class ReleaseStatusCommand extends Command
         if ($release === null) {
             $this->warn('No hay release configurada.');
             $this->line('Opciones:');
-            $this->line('  1. POST /api/webhook/github-release (GitHub Actions o curl)');
-            $this->line('  2. php artisan tipidv:sync-release (requiere MARKETING_GITHUB_TOKEN)');
-            $this->line('  3. MARKETING_DOWNLOAD_URL en .env');
+            $this->line('  1. php artisan tipidv:sync-release build-17  (recomendado si hay token GitHub)');
+            $this->line('  2. php artisan tipidv:sync-release  (último release latest)');
+            $this->line('  3. POST /api/webhook/github-release (GitHub Actions o curl manual)');
+            $this->line('  4. MARKETING_DOWNLOAD_URL en .env');
 
             return self::FAILURE;
         }

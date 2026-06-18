@@ -78,11 +78,14 @@ final class WindowsDownloadService
         });
     }
 
-    /** Refresca desde GitHub API y opcionalmente persiste. */
-    public function syncFromGithub(bool $persist = true): ?array
+    /** Refresca desde GitHub API (latest o tag concreto) y persiste en disco. */
+    public function syncFromGithub(bool $persist = true, ?string $tag = null): ?array
     {
         Cache::forget(self::CACHE_KEY);
-        $release = $this->fetchFromGithubApi();
+        $release = $tag !== null && $tag !== ''
+            ? $this->fetchReleaseByTag($tag)
+            : $this->fetchFromGithubApi();
+
         if ($release === null) {
             return null;
         }
@@ -95,6 +98,11 @@ final class WindowsDownloadService
         Cache::forget(self::CACHE_KEY);
 
         return $release;
+    }
+
+    public function clearCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
     }
 
     /** @return array<string, mixed>|null */
@@ -110,6 +118,37 @@ final class WindowsDownloadService
     }
 
     /** @return array<string, mixed>|null */
+    private function fetchReleaseByTag(string $tag): ?array
+    {
+        $repo = (string) config('marketing.github_repo', '');
+        $token = (string) config('marketing.github_token', '');
+        if ($repo === '' || $token === '') {
+            return null;
+        }
+
+        $tag = ltrim(trim($tag), '@');
+        $url = 'https://api.github.com/repos/'.$repo.'/releases/tags/'.rawurlencode($tag);
+        $response = Http::timeout(15)
+            ->acceptJson()
+            ->withToken($token)
+            ->get($url);
+
+        if (! $response->successful()) {
+            Log::warning('TipiDV: GitHub release by tag falló', [
+                'status' => $response->status(),
+                'tag' => $tag,
+                'repo' => $repo,
+            ]);
+
+            return null;
+        }
+
+        $release = $response->json();
+
+        return is_array($release) ? $this->mapGithubRelease($release) : null;
+    }
+
+    /** @return array<string, mixed>|null */
     private function fetchFromGithubApi(): ?array
     {
         $repo = (string) config('marketing.github_repo', '');
@@ -118,7 +157,6 @@ final class WindowsDownloadService
         }
 
         $token = (string) config('marketing.github_token', '');
-        // Repo privado: sin token GitHub responde 404 (no 403). Usar webhook o MARKETING_GITHUB_TOKEN.
         if ($token === '') {
             return null;
         }
@@ -139,13 +177,17 @@ final class WindowsDownloadService
         }
 
         $release = $response->json();
-        if (! is_array($release)) {
-            return null;
-        }
 
+        return is_array($release) ? $this->mapGithubRelease($release) : null;
+    }
+
+    /** @param array<string, mixed> $release */
+    private function mapGithubRelease(array $release): ?array
+    {
         $setupName = (string) config('marketing.setup_asset_name', 'TipiDV-Setup.exe');
         $portableName = (string) config('marketing.portable_asset_name', 'TipiDV-Portable.zip');
         $assets = $release['assets'] ?? [];
+        $tagName = isset($release['tag_name']) ? (string) $release['tag_name'] : null;
 
         $setupUrl = $this->findAssetUrl($assets, $setupName);
         if ($setupUrl === null) {
@@ -153,8 +195,8 @@ final class WindowsDownloadService
         }
 
         return [
-            'tag' => $release['tag_name'] ?? null,
-            'version' => $this->normalizeVersionTag($release['tag_name'] ?? null),
+            'tag' => $tagName,
+            'version' => $this->releaseVersionLabel($tagName),
             'setup_url' => $setupUrl,
             'portable_url' => $this->findAssetUrl($assets, $portableName),
             'published_at' => $release['published_at'] ?? null,
@@ -162,18 +204,27 @@ final class WindowsDownloadService
         ];
     }
 
-    private function normalizeVersionTag(?string $tag): ?string
+    private function releaseVersionLabel(?string $tag): ?string
     {
         if ($tag === null || $tag === '') {
             return null;
         }
 
         $tag = ltrim($tag, 'vV');
+        if (preg_match('/^build-\d+$/i', $tag)) {
+            return $tag;
+        }
         if (preg_match('/^\d+\.\d+(\.\d+)?/', $tag, $m)) {
             return $m[0];
         }
 
-        return null;
+        return $tag;
+    }
+
+    /** @deprecated use releaseVersionLabel */
+    private function normalizeVersionTag(?string $tag): ?string
+    {
+        return $this->releaseVersionLabel($tag);
     }
 
     /** @param array<int, array<string, mixed>> $assets */
