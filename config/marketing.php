@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'site_name' => env('MARKETING_SITE_NAME', 'TipiDV'),
     'tagline' => env('MARKETING_TAGLINE', 'Tipificador de soportes PDF para hospitales'),
-    'contact_email' => env('MARKETING_CONTACT_EMAIL', 'diego@gridsoft.co'),
+    'contact_email' => env('MARKETING_CONTACT_EMAIL', 'dialvar30@gmail.com'),
     'contact_phone' => env('MARKETING_CONTACT_PHONE', '+57 313 245 8975'),
     'whatsapp' => env('MARKETING_WHATSAPP', '573132458975'),
     'author' => env('MARKETING_AUTHOR', 'Ing. Diego Vargas'),
