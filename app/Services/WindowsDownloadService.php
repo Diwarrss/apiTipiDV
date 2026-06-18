@@ -21,7 +21,7 @@ final class WindowsDownloadService
 
     private const CACHE_KEY = 'tipidv.windows_release';
 
-    /** @param array{tag?: string, setup_url: string, portable_url?: string|null, published_at?: string} $payload */
+    /** @param array{tag?: string, version?: string, setup_url: string, portable_url?: string|null, published_at?: string} $payload */
     public function persistFromWebhook(array $payload): void
     {
         $setup = trim((string) ($payload['setup_url'] ?? ''));
@@ -31,6 +31,7 @@ final class WindowsDownloadService
 
         $data = [
             'tag' => $payload['tag'] ?? null,
+            'version' => $payload['version'] ?? null,
             'setup_url' => $setup,
             'portable_url' => $payload['portable_url'] ?? null,
             'published_at' => $payload['published_at'] ?? now()->toIso8601String(),
@@ -153,11 +154,26 @@ final class WindowsDownloadService
 
         return [
             'tag' => $release['tag_name'] ?? null,
+            'version' => $this->normalizeVersionTag($release['tag_name'] ?? null),
             'setup_url' => $setupUrl,
             'portable_url' => $this->findAssetUrl($assets, $portableName),
             'published_at' => $release['published_at'] ?? null,
             'source' => 'github_api',
         ];
+    }
+
+    private function normalizeVersionTag(?string $tag): ?string
+    {
+        if ($tag === null || $tag === '') {
+            return null;
+        }
+
+        $tag = ltrim($tag, 'vV');
+        if (preg_match('/^\d+\.\d+(\.\d+)?/', $tag, $m)) {
+            return $m[0];
+        }
+
+        return null;
     }
 
     /** @param array<int, array<string, mixed>> $assets */

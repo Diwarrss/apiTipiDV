@@ -213,6 +213,30 @@ final class LicenseService
                 ];
             }
 
+            if ($existing && ! $existing->isActive()) {
+                $activeCount = $subscription->activeActivations()->count();
+                if ($activeCount >= $subscription->machine_slots) {
+                    return [
+                        'ok' => false,
+                        'message' => 'Esta licencia ya alcanzó el máximo de equipos permitidos. Libere un equipo o compre otro plan.',
+                    ];
+                }
+
+                $existing->update([
+                    'deactivated_at' => null,
+                    'activated_at' => now(),
+                    'last_seen_at' => now(),
+                    'machine_label' => $machineLabel,
+                ]);
+
+                return [
+                    'ok' => true,
+                    'message' => 'Equipo reactivado correctamente.',
+                    'subscription' => $subscription->fresh(),
+                    'activation' => $existing->fresh(),
+                ];
+            }
+
             $activeCount = $subscription->activeActivations()->count();
             if ($activeCount >= $subscription->machine_slots) {
                 return [

@@ -33,6 +33,7 @@ final class ReleaseStatusCommand extends Command
             ['Campo', 'Valor'],
             [
                 ['Tag', $release['tag'] ?? '—'],
+                ['Versión', $release['version'] ?? '—'],
                 ['Setup', $release['setup_url'] ?? '—'],
                 ['Portable', $release['portable_url'] ?? '—'],
                 ['Archivo en disco', file_exists($storePath) ? $storePath : '(solo cache/API)'],

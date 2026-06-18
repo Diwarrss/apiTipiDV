@@ -85,6 +85,7 @@ final class WebhookController extends Controller
             'setup_url' => 'required|url|max:500',
             'portable_url' => 'nullable|url|max:500',
             'tag' => 'nullable|string|max:64',
+            'version' => 'nullable|string|max:32',
             'published_at' => 'nullable|string|max:64',
         ]);
 
