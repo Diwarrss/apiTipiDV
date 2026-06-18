@@ -18,10 +18,13 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['site.*', 'emails.license-issued'], function ($view): void {
             $downloads = app(WindowsDownloadService::class);
             $release = $downloads->release();
-            $view->with('downloadUrl', $downloads->isDownloadAvailable() ? route('site.download') : null);
-            $view->with('releaseVersion', $release['version'] ?? $release['tag'] ?? null);
-            $view->with('hasDownload', $downloads->isDownloadAvailable());
-            $view->with('hostedOnPortal', $downloads->hasLocalSetup());
+            $hosted = $downloads->hasLocalSetup();
+
+            // Solo mostrar botón de descarga cuando el .exe se sirve desde este servidor.
+            $view->with('downloadUrl', $hosted ? route('site.download') : null);
+            $view->with('releaseVersion', $hosted ? ($release['version'] ?? $release['tag'] ?? null) : null);
+            $view->with('hasDownload', $hosted);
+            $view->with('hostedOnPortal', $hosted);
         });
     }
 }

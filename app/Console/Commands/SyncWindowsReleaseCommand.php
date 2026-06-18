@@ -47,6 +47,10 @@ final class SyncWindowsReleaseCommand extends Command
             return self::FAILURE;
         }
 
+        if ($downloads->hasLocalSetup()) {
+            $downloads->fixReleasePermissions();
+        }
+
         return $this->printResult($downloads, $release);
     }
 
@@ -76,6 +80,17 @@ final class SyncWindowsReleaseCommand extends Command
 
         $this->info('Release actualizada');
         $this->table(['Campo', 'Valor'], $rows);
+
+        $storePath = storage_path('app/private/windows-release.json');
+        if (is_readable($storePath)) {
+            $onDisk = json_decode((string) file_get_contents($storePath), true);
+            $diskTag = is_array($onDisk) ? ($onDisk['tag'] ?? null) : null;
+            $expectedTag = $release['tag'] ?? null;
+            if ($expectedTag !== null && $diskTag !== $expectedTag) {
+                $this->warn("windows-release.json sigue en «{$diskTag}» — permisos. Metadata en releases/release-meta.json.");
+                $this->line('  sudo chown -R $USER:www-data storage/app/private && sudo chmod -R g+w storage/app/private');
+            }
+        }
 
         return $downloads->hasLocalSetup() ? self::SUCCESS : self::FAILURE;
     }

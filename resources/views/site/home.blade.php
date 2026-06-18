@@ -21,8 +21,8 @@
             </p>
             <div class="hero-actions">
                 <a href="{{ url('/comprar') }}" class="btn btn-primary">Comprar licencia</a>
-                @if(!empty($hasDownload))
-                    <a href="{{ route('site.download') }}" class="btn btn-outline">Descargar instalador</a>
+                @if(!empty($downloadUrl))
+                    <a href="{{ $downloadUrl }}" class="btn btn-outline">Descargar instalador</a>
                 @else
                     <a href="{{ url('/#descargar') }}" class="btn btn-outline">Descargar</a>
                 @endif

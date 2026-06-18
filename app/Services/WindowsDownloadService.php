@@ -22,6 +22,9 @@ final class WindowsDownloadService
 
     private const LOCAL_SETUP_PATH = 'releases/TipiDV-Setup.exe';
 
+    /** Metadata junto al .exe (escribible aunque windows-release.json esté bloqueado). */
+    private const LOCAL_META_PATH = 'releases/release-meta.json';
+
     private const CACHE_KEY = 'tipidv.windows_release';
 
     private ?string $lastMirrorError = null;
@@ -61,7 +64,11 @@ final class WindowsDownloadService
 
     public function hasLocalSetup(): bool
     {
-        return Storage::disk('local')->exists(self::LOCAL_SETUP_PATH);
+        if (! Storage::disk('local')->exists(self::LOCAL_SETUP_PATH)) {
+            return false;
+        }
+
+        return is_readable($this->localSetupAbsolutePath());
     }
 
     public function localSetupAbsolutePath(): string
@@ -81,7 +88,16 @@ final class WindowsDownloadService
     /** URL externa (GitHub) guardada en metadata, si existe. */
     public function externalSetupUrl(): ?string
     {
-        $url = $this->release()['external_setup_url'] ?? $this->release()['setup_url'] ?? null;
+        if ($this->hasLocalSetup()) {
+            return null;
+        }
+
+        $release = $this->release();
+        if ($release === null) {
+            return null;
+        }
+
+        $url = $release['external_setup_url'] ?? $release['setup_url'] ?? null;
 
         return is_string($url) && $url !== '' ? $url : null;
     }
@@ -153,10 +169,7 @@ final class WindowsDownloadService
             return null;
         }
 
-        if ($persist) {
-            $release['source'] = 'github_sync';
-            $this->writeRelease($release);
-        }
+        $release['source'] = 'github_sync';
 
         if ($mirrorToServer) {
             $mirrored = $this->mirrorExternalSetup($release);
@@ -166,8 +179,17 @@ final class WindowsDownloadService
         }
 
         if ($persist) {
-            $release['source'] = 'github_sync';
-            $this->writeRelease($release);
+            try {
+                $this->writeRelease($release);
+            } catch (\RuntimeException $e) {
+                if ($mirrorToServer && $this->hasLocalSetup()) {
+                    Log::warning('TipiDV: windows-release.json no se pudo actualizar; usando release-meta.json', [
+                        'error' => $e->getMessage(),
+                    ]);
+                } else {
+                    throw $e;
+                }
+            }
         }
 
         Cache::forget(self::CACHE_KEY);
@@ -194,6 +216,8 @@ final class WindowsDownloadService
         Storage::disk('local')->put(self::LOCAL_SETUP_PATH, $stream);
         fclose($stream);
 
+        $this->ensureReleaseFilePermissions();
+
         $record = $this->buildReleaseRecord(
             tag: $tag,
             version: $version ?? $tag,
@@ -204,6 +228,7 @@ final class WindowsDownloadService
         );
         $record['local_file'] = self::LOCAL_SETUP_PATH;
         $record['local_size'] = Storage::disk('local')->size(self::LOCAL_SETUP_PATH);
+        $record['mirrored_at'] = now()->toIso8601String();
         $this->writeRelease($record);
 
         return $record;
@@ -242,11 +267,13 @@ final class WindowsDownloadService
             return null;
         }
 
-        @chmod($this->localSetupAbsolutePath(), 0644);
+        $this->ensureReleaseFilePermissions();
 
         $release['local_file'] = self::LOCAL_SETUP_PATH;
         $release['local_size'] = filesize($this->localSetupAbsolutePath());
         $release['mirrored_at'] = now()->toIso8601String();
+
+        $this->writeLocalMeta($release);
 
         Log::info('TipiDV: instalador copiado al servidor', [
             'tag' => $release['tag'] ?? null,
@@ -261,6 +288,30 @@ final class WindowsDownloadService
         $dir = dirname(self::LOCAL_SETUP_PATH);
         if ($dir !== '.' && ! Storage::disk('local')->exists($dir)) {
             Storage::disk('local')->makeDirectory($dir);
+        }
+        $this->ensureReleaseFilePermissions();
+    }
+
+    /** Ajusta permisos para que nginx/php (www-data) pueda leer el instalador. */
+    public function fixReleasePermissions(): void
+    {
+        $this->ensureReleaseFilePermissions();
+    }
+
+    private function ensureReleaseFilePermissions(): void
+    {
+        $root = Storage::disk('local')->path('');
+        $path = $this->localSetupAbsolutePath();
+        $dir = dirname($path);
+
+        if (is_dir($root)) {
+            @chmod($root, 0755);
+        }
+        if (is_dir($dir)) {
+            @chmod($dir, 0755);
+        }
+        if (is_file($path)) {
+            @chmod($path, 0644);
         }
     }
 
@@ -310,6 +361,7 @@ final class WindowsDownloadService
 
             if ($status >= 200 && $status < 300 && $size >= 1024 && ! $looksHtml) {
                 rename($tempPath, $this->localSetupAbsolutePath());
+                $this->ensureReleaseFilePermissions();
 
                 return true;
             }
@@ -342,11 +394,124 @@ final class WindowsDownloadService
         Cache::forget(self::CACHE_KEY);
     }
 
+    /** Reescribe metadata cuando el .exe ya está en disco (sin re-descargar). */
+    public function repairMetadata(string $tag, ?string $version = null): array
+    {
+        if (! Storage::disk('local')->exists(self::LOCAL_SETUP_PATH)) {
+            throw new \InvalidArgumentException('No hay instalador local en releases/TipiDV-Setup.exe.');
+        }
+
+        $this->ensureReleaseFilePermissions();
+
+        $tag = ltrim(trim($tag), '@');
+        $record = [
+            'tag' => $tag,
+            'version' => $version ?? $tag,
+            'local_file' => self::LOCAL_SETUP_PATH,
+            'local_size' => Storage::disk('local')->size(self::LOCAL_SETUP_PATH),
+            'mirrored_at' => now()->toIso8601String(),
+            'source' => 'repair',
+        ];
+
+        try {
+            $this->writeRelease($record);
+        } catch (\RuntimeException $e) {
+            $this->writeLocalMeta($record);
+            Log::warning('TipiDV: repair parcial (solo release-meta.json)', ['error' => $e->getMessage()]);
+        }
+
+        Cache::forget(self::CACHE_KEY);
+
+        return $this->enrichRelease($record);
+    }
+
     /** @param array<string, mixed> $data */
     private function writeRelease(array $data): void
     {
-        Storage::disk('local')->put(self::STORE_PATH, json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if ($json === false) {
+            throw new \RuntimeException('No se pudo serializar metadata de release.');
+        }
+
+        if (! $this->putLocalFile(self::STORE_PATH, $json)) {
+            $path = Storage::disk('local')->path(self::STORE_PATH);
+            Log::error('TipiDV: no se pudo escribir windows-release.json', ['path' => $path]);
+            throw new \RuntimeException(
+                'No se pudo guardar '.self::STORE_PATH.' — revisa permisos en storage/app/private (ej. chown ubuntu:www-data && chmod g+w).'
+            );
+        }
+
+        $this->writeLocalMeta($data);
         Cache::forget(self::CACHE_KEY);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function writeLocalMeta(array $data): void
+    {
+        $payload = [
+            'tag' => $data['tag'] ?? null,
+            'version' => $data['version'] ?? null,
+            'local_file' => $data['local_file'] ?? self::LOCAL_SETUP_PATH,
+            'local_size' => $data['local_size'] ?? $this->localSetupSize(),
+            'mirrored_at' => $data['mirrored_at'] ?? now()->toIso8601String(),
+            'published_at' => $data['published_at'] ?? null,
+            'source' => $data['source'] ?? null,
+        ];
+
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if ($json === false) {
+            return;
+        }
+
+        if (! $this->putLocalFile(self::LOCAL_META_PATH, $json)) {
+            Log::warning('TipiDV: no se pudo escribir release-meta.json', [
+                'path' => Storage::disk('local')->path(self::LOCAL_META_PATH),
+            ]);
+        }
+    }
+
+    private function putLocalFile(string $relativePath, string $contents): bool
+    {
+        if (Storage::disk('local')->put($relativePath, $contents) === true) {
+            return true;
+        }
+
+        $absolutePath = Storage::disk('local')->path($relativePath);
+        $dir = dirname($absolutePath);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        return file_put_contents($absolutePath, $contents) !== false;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function readLocalMeta(): ?array
+    {
+        if (! Storage::disk('local')->exists(self::LOCAL_META_PATH)) {
+            return null;
+        }
+
+        $decoded = json_decode(Storage::disk('local')->get(self::LOCAL_META_PATH), true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /** @param array<string, mixed> $record */
+    private function mergeLocalMeta(array $record): array
+    {
+        $meta = $this->readLocalMeta();
+        if ($meta === null) {
+            return $record;
+        }
+
+        foreach (['tag', 'version', 'local_file', 'local_size', 'mirrored_at', 'published_at', 'source'] as $key) {
+            if (! empty($meta[$key])) {
+                $record[$key] = $meta[$key];
+            }
+        }
+
+        return $record;
     }
 
     /** @return array<string, mixed> */
@@ -384,11 +549,14 @@ final class WindowsDownloadService
     /** @param array<string, mixed> $record */
     private function enrichRelease(array $record): array
     {
+        $record = $this->mergeLocalMeta($record);
+
         if ($this->hasLocalSetup()) {
             $record['local_file'] = self::LOCAL_SETUP_PATH;
             $record['local_size'] = Storage::disk('local')->size(self::LOCAL_SETUP_PATH);
             $record['hosted_on_portal'] = true;
             $record['portal_download_url'] = route('site.download');
+            unset($record['setup_url'], $record['external_setup_url']);
         }
 
         return $record;

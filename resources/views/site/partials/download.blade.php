@@ -8,12 +8,12 @@
         </header>
 
         <div class="download-card">
-            @if(!empty($hasDownload))
+            @if(!empty($downloadUrl))
                 @if(!empty($releaseVersion))
                     <span class="download-version">Versión {{ $releaseVersion }}</span>
                 @endif
                 <div class="download-actions">
-                    <a href="{{ route('site.download') }}" class="btn btn-primary btn-download">
+                    <a href="{{ $downloadUrl }}" class="btn btn-primary btn-download">
                         ⬇ Descargar TipiDV-Setup.exe
                     </a>
                 </div>
