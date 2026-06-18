@@ -11,12 +11,12 @@
             <h1 style="margin:0 0 12px;font-size:1.75rem">¡Gracias!</h1>
             <p style="color:var(--muted);margin:0 0 24px">
                 Si tu pago fue aprobado, en unos minutos recibirás un correo con tu clave
-                <strong>TDV-XXXX-XXXX-XXXX</strong> y las instrucciones de activación.
+                <strong>TDV-XXXX-XXXX-XXXX</strong> y cuántos equipos incluye tu paquete.
             </p>
             <ol style="text-align:left;color:var(--muted);font-size:.95rem;line-height:1.7">
                 <li>Revisa bandeja de entrada y spam.</li>
-                <li>Instala TipiDV en el PC de digitalización.</li>
-                <li>Al abrir la app, ingresa correo + clave de licencia.</li>
+                <li>Instala TipiDV en cada PC de digitalización.</li>
+                <li>En todos los equipos: el mismo correo + la misma clave (1 clave = N PCs según tu paquete).</li>
             </ol>
             <div style="margin-top:28px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
                 @if(!empty($downloadUrl))

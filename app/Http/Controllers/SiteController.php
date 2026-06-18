@@ -4,20 +4,25 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\LicensePricingService;
 use App\Services\PlanCatalogService;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 final class SiteController extends Controller
 {
-    public function __construct(private readonly PlanCatalogService $plans)
-    {
+    public function __construct(
+        private readonly PlanCatalogService $plans,
+        private readonly LicensePricingService $pricing,
+    ) {
     }
 
     public function home(): View
     {
         return view('site.home', [
             'plans' => $this->plans->plans(),
+            'maxQuantity' => $this->pricing->maxQuantity(),
+            'volumeDiscounts' => $this->pricing->volumeDiscounts(),
         ]);
     }
 
@@ -25,6 +30,8 @@ final class SiteController extends Controller
     {
         return view('site.comprar', [
             'plans' => $this->plans->plans(),
+            'maxQuantity' => $this->pricing->maxQuantity(),
+            'volumeDiscounts' => $this->pricing->volumeDiscounts(),
         ]);
     }
 

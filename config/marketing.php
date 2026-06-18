@@ -30,6 +30,18 @@ return [
         'monthly_cop' => (int) env('MARKETING_PRICE_MONTHLY_COP', 29_000),
     ],
 
+    /** Máximo de equipos por compra en el portal (validado en servidor). */
+    'max_license_quantity' => (int) env('MARKETING_MAX_LICENSE_QUANTITY', 50),
+
+    /**
+     * Descuentos por volumen (aplicados en servidor al crear el link Wompi).
+     * Una clave TDV sirve para N equipos (machine_slots = cantidad).
+     */
+    'volume_discounts' => [
+        ['min_quantity' => 5, 'percent' => 10, 'label' => '10% de descuento desde 5 equipos'],
+        ['min_quantity' => 10, 'percent' => 15, 'label' => '15% de descuento desde 10 equipos'],
+    ],
+
     'seo' => [
         'title' => env('MARKETING_SEO_TITLE', 'TipiDV — Tipificador PDF para hospitales y clínicas'),
         'description' => env(

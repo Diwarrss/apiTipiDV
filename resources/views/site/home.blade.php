@@ -4,8 +4,9 @@
 
 @php
     $fmt = fn (float $n) => '$' . number_format($n, 0, ',', '.');
-    $annual = collect($plans)->firstWhere('period', 'annual') ?? $plans[1] ?? $plans[0] ?? null;
-    $monthly = collect($plans)->firstWhere('period', 'monthly') ?? $plans[0] ?? null;
+    $defaultPlan = request('plan', 'annual');
+    $plansJson = json_encode($plans, JSON_UNESCAPED_UNICODE);
+    $discountsJson = json_encode($volumeDiscounts, JSON_UNESCAPED_UNICODE);
 @endphp
 
 @section('content')
@@ -36,10 +37,10 @@
         <div class="hero-card">
             <h3>Así funciona</h3>
             <ol class="mini-flow">
-                <li><span class="step-num">1</span> Compras la licencia en línea (1 PC por licencia)</li>
-                <li><span class="step-num">2</span> Recibes tu clave <code>TDV-XXXX-…</code> por email</li>
-                <li><span class="step-num">3</span> Instalas TipiDV en el equipo de digitalización</li>
-                <li><span class="step-num">4</span> Activas con correo + clave y empiezas a tipificar</li>
+                <li><span class="step-num">1</span> Armas tu paquete en línea (plan + cantidad de PCs)</li>
+                <li><span class="step-num">2</span> Recibes una clave <code>TDV-XXXX-…</code> por email</li>
+                <li><span class="step-num">3</span> Instalas TipiDV en cada equipo de digitalización</li>
+                <li><span class="step-num">4</span> Activas con el mismo correo + clave en cada PC</li>
             </ol>
         </div>
     </div>
@@ -70,7 +71,7 @@
             <article class="feature">
                 <div class="feature-icon">🔐</div>
                 <h3>Licencia por equipo</h3>
-                <p>Una activación por PC. Hospitales pueden sumar equipos con el mismo correo institucional.</p>
+                <p>Paga por cantidad de PCs. Una clave institucional puede cubrir varios equipos del hospital.</p>
             </article>
             <article class="feature">
                 <div class="feature-icon">🌐</div>
@@ -90,13 +91,70 @@
     <div class="container">
         <div class="section-title">
             <h2>Precios claros, sin sorpresas</h2>
-            <p>Licencia por computador. Precios en pesos colombianos (COP), actualizables según el plan elegido.</p>
+            <p>Licencia por computador. Precios en pesos colombianos (COP). Simula tu paquete antes de pagar.</p>
         </div>
+
+        <div class="form-card pricing-preview">
+            <div class="pricing-preview-grid">
+                <div class="pricing-preview-controls">
+                    <p class="pricing-plan-hint" style="margin-top:0;font-weight:600;color:var(--text-strong)">Elige el plan</p>
+                    <div class="tabs" role="tablist" id="home-plan-tabs">
+                        @foreach($plans as $plan)
+                            @php $isAnnual = ($plan['period'] ?? '') === 'annual'; @endphp
+                            <button type="button"
+                                class="tab {{ ($plan['period'] ?? '') === $defaultPlan ? 'active' : '' }}"
+                                data-period="{{ $plan['period'] }}"
+                                data-unit="{{ (float) ($plan['value_cop'] ?? 0) }}"
+                                data-billing="{{ (int) ($plan['billing_months'] ?? 1) }}">
+                                {{ $plan['name'] ?? $plan['period'] }}
+                                @if($isAnnual)
+                                    <span style="display:block;font-size:.7rem;font-weight:500;opacity:.9">Recomendado</span>
+                                @endif
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <div class="field" style="margin-bottom:8px">
+                        <label for="home-quantity">Cantidad de equipos (PCs)</label>
+                        <div class="qty-stepper">
+                            <button type="button" class="qty-btn" id="home-qty-minus" aria-label="Menos">−</button>
+                            <input type="number" id="home-quantity" value="1" min="1" max="{{ $maxQuantity }}" inputmode="numeric">
+                            <button type="button" class="qty-btn" id="home-qty-plus" aria-label="Más">+</button>
+                        </div>
+                        <small>1 clave TDV para todos los equipos del paquete · máx. {{ $maxQuantity }}</small>
+                    </div>
+
+                    @if(count($volumeDiscounts) > 0)
+                        <div class="discount-badges" style="margin-bottom:0">
+                            @foreach(array_reverse($volumeDiscounts) as $tier)
+                                <span class="discount-badge">{{ $tier['label'] ?? '' }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <div class="pricing-preview-summary">
+                    <p style="margin:0 0 8px;font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Tu cotización</p>
+                    <div id="home-price-lines"></div>
+                    <p id="home-price-total" class="price-total">—</p>
+                    <p id="home-price-per-unit" class="price-per-unit"></p>
+                    <p class="pricing-preview-note">
+                        Incluye activación por correo, soporte y pago seguro con Wompi.
+                        El total final se confirma al crear el pago (calculado en servidor).
+                    </p>
+                    <a href="{{ url('/comprar') }}" id="home-checkout-link" class="btn btn-primary" style="width:100%">
+                        Ir a comprar con este paquete
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="pricing-grid">
             @foreach($plans as $plan)
                 @php
                     $isAnnual = ($plan['period'] ?? '') === 'annual' || ($plan['billing_months'] ?? 0) >= 12;
                     $featured = $isAnnual || !empty($plan['featured']);
+                    $unit = (float) ($plan['value_cop'] ?? 0);
                 @endphp
                 <article class="price-card {{ $featured ? 'featured' : '' }}">
                     @if($featured)
@@ -104,19 +162,19 @@
                     @endif
                     <h3>{{ $plan['name'] ?? 'Plan' }}</h3>
                     <p style="margin:0;color:var(--muted);font-size:.9rem">
-                        {{ $isAnnual ? '12 meses · 1 equipo' : '1 mes · 1 equipo' }}
+                        {{ $isAnnual ? '12 meses' : '1 mes' }} · precio por equipo
                     </p>
                     <div class="amount">
-                        {{ $fmt((float) ($plan['value_cop'] ?? 0)) }}
-                        <small>COP / {{ $isAnnual ? 'año' : 'mes' }}</small>
+                        {{ $fmt($unit) }}
+                        <small>COP / equipo / {{ $isAnnual ? 'año' : 'mes' }}</small>
                     </div>
                     <ul>
-                        <li>1 PC activado por licencia</li>
-                        <li>Clave por correo electrónico</li>
+                        <li>Paquetes de 1 a {{ $maxQuantity }} equipos</li>
+                        <li>1 clave para todo el paquete</li>
+                        <li>Descuentos automáticos por volumen</li>
                         <li>Soporte por WhatsApp y email</li>
                         @if($isAnnual)
-                            <li>Ahorro vs plan mensual</li>
-                            <li>Renovación con mismo correo</li>
+                            <li>Mejor valor vs plan mensual</li>
                         @else
                             <li>Ideal para probar o equipos temporales</li>
                         @endif
@@ -128,8 +186,8 @@
             @endforeach
         </div>
         <p style="text-align:center;color:var(--muted);font-size:.9rem;margin-top:24px">
-            ¿Varios equipos en el hospital? Compra licencias adicionales con el mismo correo institucional.
-            <a href="https://wa.me/{{ config('marketing.whatsapp') }}">Escríbenos</a> si necesitas cotización.
+            ¿Necesitas más de {{ $maxQuantity }} equipos o facturación especial?
+            <a href="https://wa.me/{{ config('marketing.whatsapp') }}">Escríbenos por WhatsApp</a>.
         </p>
     </div>
 </section>
@@ -146,11 +204,11 @@
             </details>
             <details>
                 <summary>¿Cuántos equipos cubre una licencia?</summary>
-                <p>Una licencia activa un solo PC. Para más equipos, compra licencias adicionales usando el mismo correo (tipo <em>nuevo equipo</em> en el checkout).</p>
+                <p>Armas un paquete de 1 a {{ $maxQuantity }} PCs. Recibes <strong>una clave TDV</strong> válida para todos los equipos pagados. En cada PC usas el mismo correo y la misma clave. Si necesitas más equipos después, puedes agregarlos desde el checkout.</p>
             </details>
             <details>
                 <summary>¿Cómo recibo la clave de activación?</summary>
-                <p>Tras el pago aprobado en Wompi, enviamos automáticamente un correo con tu clave <code>TDV-XXXX-XXXX-XXXX</code>. La usas una vez en cada equipo.</p>
+                <p>Tras el pago aprobado en Wompi, enviamos un correo con tu clave <code>TDV-XXXX-XXXX-XXXX</code> y cuántos equipos incluye. Actívala en cada PC con el mismo correo.</p>
             </details>
             <details>
                 <summary>¿Funciona sin internet?</summary>
@@ -172,3 +230,91 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const plans = {!! $plansJson !!};
+    const volumeDiscounts = {!! $discountsJson !!};
+    const maxQuantity = {{ (int) $maxQuantity }};
+    const comprarBase = @json(url('/comprar'));
+    const fmtCop = (n) => '$' + Math.round(n).toLocaleString('es-CO');
+
+    const tabs = document.querySelectorAll('#home-plan-tabs .tab');
+    const qtyInput = document.getElementById('home-quantity');
+    const linesEl = document.getElementById('home-price-lines');
+    const totalEl = document.getElementById('home-price-total');
+    const perUnitEl = document.getElementById('home-price-per-unit');
+    const checkoutLink = document.getElementById('home-checkout-link');
+
+    function discountPercent(qty) {
+        for (const tier of volumeDiscounts) {
+            if (qty >= tier.min_quantity) return tier.percent;
+        }
+        return 0;
+    }
+
+    function quote(unit, qty) {
+        qty = Math.max(1, Math.min(maxQuantity, qty));
+        const subtotal = unit * qty;
+        const pct = discountPercent(qty);
+        const discount = Math.round(subtotal * (pct / 100));
+        return { qty, unit, subtotal, pct, discount, total: subtotal - discount };
+    }
+
+    function clampQty() {
+        let v = parseInt(qtyInput.value, 10);
+        if (isNaN(v) || v < 1) v = 1;
+        if (v > maxQuantity) v = maxQuantity;
+        qtyInput.value = v;
+        return v;
+    }
+
+    function activeTab() {
+        return document.querySelector('#home-plan-tabs .tab.active') || tabs[0];
+    }
+
+    function refresh() {
+        const tab = activeTab();
+        if (!tab) return;
+
+        const unit = parseFloat(tab.dataset.unit || '0');
+        const billing = parseInt(tab.dataset.billing || '12', 10);
+        const period = tab.dataset.period || 'annual';
+        const isAnnual = billing >= 12;
+        const q = quote(unit, clampQty());
+
+        let html = `<div class="price-line">${q.qty} equipo(s) × ${fmtCop(q.unit)} = <strong>${fmtCop(q.subtotal)}</strong></div>`;
+        if (q.discount > 0) {
+            html += `<div class="price-line price-discount">Descuento ${q.pct}%: −${fmtCop(q.discount)}</div>`;
+        }
+        linesEl.innerHTML = html;
+        totalEl.textContent = fmtCop(q.total) + ' COP';
+        const perUnit = Math.round(q.total / q.qty);
+        perUnitEl.innerHTML = `Equivale a <strong>${fmtCop(perUnit)} COP</strong> por equipo / ${isAnnual ? 'año' : 'mes'}`;
+
+        const params = new URLSearchParams({ plan: period, quantity: String(q.qty) });
+        checkoutLink.href = comprarBase + '?' + params.toString();
+    }
+
+    tabs.forEach(btn => btn.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        refresh();
+    }));
+
+    qtyInput.addEventListener('input', refresh);
+    qtyInput.addEventListener('change', refresh);
+    document.getElementById('home-qty-minus').addEventListener('click', () => {
+        qtyInput.value = Math.max(1, clampQty() - 1);
+        refresh();
+    });
+    document.getElementById('home-qty-plus').addEventListener('click', () => {
+        qtyInput.value = Math.min(maxQuantity, clampQty() + 1);
+        refresh();
+    });
+
+    refresh();
+})();
+</script>
+@endpush

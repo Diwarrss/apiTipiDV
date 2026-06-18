@@ -336,6 +336,48 @@ section { padding: 56px 0; }
 .price-card ul li { padding: 6px 0; padding-left: 1.4em; position: relative; }
 .price-card ul li::before { content: "✓"; position: absolute; left: 0; color: var(--orange); font-weight: 700; }
 
+.pricing-preview {
+    max-width: 820px;
+    margin: 0 auto 28px;
+}
+.pricing-preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 720px) {
+    .pricing-preview-grid { grid-template-columns: 1fr; }
+}
+.pricing-preview-summary {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 100%;
+}
+.pricing-preview-summary .price-total {
+    font-size: 1.75rem;
+    margin: 12px 0 6px;
+}
+.price-per-unit {
+    font-size: .92rem;
+    color: var(--muted);
+    margin: 0 0 16px;
+}
+.price-per-unit strong { color: var(--orange); }
+.pricing-preview-note {
+    font-size: .88rem;
+    color: var(--muted);
+    margin: 0 0 16px;
+    line-height: 1.5;
+}
+.pricing-plan-hint {
+    font-size: .85rem;
+    color: var(--muted);
+    margin: -8px 0 16px;
+}
+
 /* FAQ */
 .faq { max-width: 720px; margin: 0 auto; }
 .faq details {
@@ -434,4 +476,184 @@ section { padding: 56px 0; }
     font-size: .9rem;
 }
 
+.checkout-section { padding: 48px 0 64px; }
+.checkout-container { max-width: 640px; }
+.checkout-lead { color: var(--muted); margin: 0; }
+.checkout-footnote {
+    text-align: center;
+    font-size: .8rem;
+    color: var(--muted);
+    margin: 14px 0 0;
+}
+
+.form-step {
+    border: none;
+    margin: 0 0 28px;
+    padding: 0 0 24px;
+    border-bottom: 1px solid var(--border);
+}
+.form-step:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.form-step-submit { margin-bottom: 0; }
+.form-step-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0 0 12px;
+    padding: 0;
+}
+.form-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--orange);
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.form-step-desc {
+    margin: 0 0 16px;
+    font-size: .9rem;
+    color: var(--muted);
+}
+.field-label {
+    display: block;
+    font-size: .85rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--muted);
+}
+.req { color: var(--orange); }
+
+.form-optional {
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+}
+.form-optional summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--text-body);
+    list-style: none;
+}
+.form-optional summary::-webkit-details-marker { display: none; }
+.form-optional summary::before {
+    content: '▸ ';
+    color: var(--orange);
+}
+.form-optional[open] summary::before { content: '▾ '; }
+.form-optional-body { padding: 0 16px 16px; }
+
+.choice-group { display: flex; flex-direction: column; gap: 8px; }
+.choice-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.choice-card:has(input:checked) {
+    border-color: var(--orange);
+    background: var(--icon-bg);
+}
+.choice-card input { margin-top: 4px; accent-color: var(--orange); flex-shrink: 0; }
+.choice-card-body { display: flex; flex-direction: column; gap: 2px; }
+.choice-card-body strong { font-size: .92rem; color: var(--text-strong); }
+.choice-card-body small { font-size: .8rem; color: var(--muted); }
+
+.field-error {
+    display: block;
+    margin-top: 6px;
+    font-size: .82rem;
+    color: #dc2626;
+    font-weight: 500;
+}
+[data-theme="dark"] .field-error,
+:root:not([data-theme="light"]) .field-error { color: #fca5a5; }
+.field input.input-invalid,
+.field select.input-invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
 #selected-price { color: var(--text-strong); }
+
+.package-info {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: .9rem;
+    color: var(--text-body);
+}
+.package-info ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.55; }
+.package-info strong { color: var(--text-strong); }
+
+.price-panel {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+.price-line { font-size: .92rem; color: var(--muted); margin-bottom: 4px; }
+.price-discount { color: var(--orange); }
+.price-total { font-size: 1.15rem; font-weight: 700; margin: 10px 0 0; color: var(--text-strong); }
+
+.discount-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.discount-badge {
+    font-size: .75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--icon-bg);
+    color: var(--orange);
+    border: 1px solid var(--orange-glow);
+}
+
+.qty-stepper {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--input-bg);
+}
+.qty-btn {
+    width: 44px;
+    border: none;
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+}
+.qty-btn:hover { background: var(--orange-glow); color: var(--orange); }
+.qty-stepper input[type="number"] {
+    width: 72px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+    -moz-appearance: textfield;
+}
+.qty-stepper input[type="number"]::-webkit-outer-spin-button,
+.qty-stepper input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

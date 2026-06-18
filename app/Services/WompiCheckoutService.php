@@ -12,14 +12,19 @@ final class WompiCheckoutService
 {
     private const PENDING_TTL_SECONDS = 604_800; // 7 días
 
+    public function __construct(private readonly LicensePricingService $pricing)
+    {
+    }
+
     /** @param array<string, mixed> $plan */
     /** @param array<string, mixed> $customer */
     public function createPaymentLink(
         array $plan,
         array $customer,
         string $returnUrl,
+        string $purchaseType,
+        int $quantity,
         ?string $organizationName = null,
-        ?string $purchaseType = null,
     ): array {
         $privateKey = (string) config('licensing.wompi.private_key', '');
         $apiUrl = (string) config('licensing.wompi.api_url', '');
@@ -27,17 +32,27 @@ final class WompiCheckoutService
             throw new \RuntimeException('Wompi no configurado (WOMPI_PRIVATE_KEY).');
         }
 
-        $amountCop = (float) ($plan['value_cop'] ?? 0);
+        $purchaseType = $this->pricing->normalizePurchaseType($purchaseType);
+        $quote = $this->pricing->quote($plan, $quantity, $purchaseType);
+        $amountCop = (float) $quote['total_cop'];
         if ($amountCop <= 0) {
             throw new \InvalidArgumentException('Plan sin precio válido.');
         }
 
+        $qty = (int) $quote['quantity'];
         $amountInCents = (int) round($amountCop * 100);
         $reference = 'TDV-'.strtoupper(Str::random(12));
 
+        $planLabel = (string) ($plan['name'] ?? 'Licencia TipiDV');
+        $description = $purchaseType === 'renewal'
+            ? "{$planLabel} — renovación de vigencia"
+            : ($qty === 1
+                ? "{$planLabel} — 1 equipo"
+                : "{$planLabel} — paquete {$qty} equipos (1 clave)");
+
         $body = [
-            'name' => (string) ($plan['name'] ?? 'Licencia TipiDV'),
-            'description' => 'Licencia TipiDV — '.($plan['period'] ?? 'plan'),
+            'name' => $planLabel,
+            'description' => $description,
             'single_use' => true,
             'collect_shipping' => false,
             'amount_in_cents' => $amountInCents,
@@ -71,13 +86,14 @@ final class WompiCheckoutService
             'reference' => $reference,
             'payment_link_id' => $linkId,
             'period' => (string) ($plan['period'] ?? 'annual'),
-            'plan_name' => (string) ($plan['name'] ?? 'TipiDV'),
+            'plan_name' => $planLabel,
             'amount_cop' => $amountCop,
             'billing_months' => (int) ($plan['billing_months'] ?? 12),
-            'machine_slots' => (int) ($plan['machine_slots'] ?? 1),
+            'quantity' => $qty,
+            'purchase_type' => $purchaseType,
+            'pricing' => $quote,
             'customer' => $customer,
             'organization_name' => $organizationName,
-            'purchase_type' => $purchaseType,
         ];
 
         Cache::put($this->cacheKeyForLink($linkId), $pending, self::PENDING_TTL_SECONDS);
@@ -87,6 +103,7 @@ final class WompiCheckoutService
             'payment_link_url' => 'https://checkout.wompi.co/l/'.$linkId,
             'payment_link_id' => $linkId,
             'reference' => $reference,
+            'pricing' => $quote,
         ];
     }
 

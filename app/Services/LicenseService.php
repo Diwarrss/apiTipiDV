@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Mail;
 
 final class LicenseService
 {
+    public function __construct(private readonly LicensePricingService $pricing)
+    {
+    }
     /** Pago aprobado vía webhook Wompi directo. */
     public function handleWompiApproved(array $wompiTransaction, array $pending): ?Subscription
     {
@@ -46,7 +49,8 @@ final class LicenseService
 
         $months = max(1, (int) ($pending['billing_months'] ?? 12));
         $period = (string) ($pending['period'] ?? LicenseSupport::PERIOD_ANNUAL);
-        $machineSlots = max(1, (int) ($pending['machine_slots'] ?? 1));
+        $quantity = max(1, (int) ($pending['quantity'] ?? 1));
+        $purchaseType = $this->pricing->normalizePurchaseType((string) ($pending['purchase_type'] ?? 'new_license'));
         $startsAt = GridPayTimestamp::parse($wompiTransaction['created_at'] ?? null);
 
         $productPayload = [
@@ -56,9 +60,9 @@ final class LicenseService
                 'service_type' => LicenseSupport::SERVICE_TYPE,
                 'billing_period' => $period,
                 'billing_months' => $months,
-                'machine_slots' => $machineSlots,
+                'quantity' => $quantity,
+                'purchase_type' => $purchaseType,
                 'organization_name' => $pending['organization_name'] ?? null,
-                'purchase_type' => $pending['purchase_type'] ?? null,
             ],
         ];
 
@@ -68,7 +72,8 @@ final class LicenseService
             product: $productPayload,
             months: $months,
             period: $period,
-            machineSlots: $machineSlots,
+            quantity: $quantity,
+            purchaseType: $purchaseType,
             amount: $amount,
             wompiReference: $wompiId !== '' ? $wompiId : null,
             transactionUuid: (string) ($pending['reference'] ?? null),
@@ -86,7 +91,8 @@ final class LicenseService
         array $product,
         int $months,
         string $period,
-        int $machineSlots,
+        int $quantity,
+        string $purchaseType,
         float $amount,
         ?string $wompiReference,
         ?string $transactionUuid,
@@ -94,6 +100,8 @@ final class LicenseService
         ?\Carbon\CarbonInterface $startsAt = null,
     ): Subscription {
         $startsAt = $startsAt ?? GridPayTimestamp::parse(null);
+        $purchaseType = $this->pricing->normalizePurchaseType($purchaseType);
+        $quantity = max(1, $quantity);
 
         /** @var Subscription|null $renewal */
         $renewal = Subscription::query()
@@ -101,12 +109,15 @@ final class LicenseService
             ->orderByDesc('expires_at')
             ->first();
 
+        $existingSlots = $renewal?->machine_slots ?? 0;
+        $machineSlots = $this->pricing->resolveMachineSlots($purchaseType, $quantity, $existingSlots);
+
         if ($renewal) {
             $base = $renewal->expires_at->isFuture() ? $renewal->expires_at : now();
             $renewal->fill([
                 'customer_name' => $customerName ?? $renewal->customer_name,
                 'billing_period' => $period,
-                'machine_slots' => max($renewal->machine_slots, $machineSlots),
+                'machine_slots' => $machineSlots,
                 'expires_at' => $base->copy()->addMonths($months),
                 'status' => Subscription::STATUS_ACTIVE,
                 'wompi_reference' => $wompiReference,
@@ -116,6 +127,8 @@ final class LicenseService
                     'product_name' => $product['name'] ?? null,
                     'wompi_event' => $wompiEvent,
                     'renewed_at' => now()->toIso8601String(),
+                    'last_purchase_type' => $purchaseType,
+                    'last_quantity' => $quantity,
                 ]),
             ]);
             $renewal->save();
@@ -137,7 +150,8 @@ final class LicenseService
                 'metadata' => [
                     'product_name' => $product['name'] ?? null,
                     'wompi_event' => $wompiEvent,
-                    'purchase_type' => $product['detail']['purchase_type'] ?? null,
+                    'purchase_type' => $purchaseType,
+                    'quantity' => $quantity,
                 ],
             ]);
         }
