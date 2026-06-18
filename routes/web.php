@@ -14,6 +14,7 @@ Route::get('/gracias', [SiteController::class, 'gracias'])->name('site.gracias')
 Route::get('/descargar', [DownloadController::class, 'setup'])->name('site.download');
 Route::get('/robots.txt', [SiteController::class, 'robots']);
 Route::get('/sitemap.xml', [SiteController::class, 'sitemap']);
+Route::get('/llms.txt', [SiteController::class, 'llms']);
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');

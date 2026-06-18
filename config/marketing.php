@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'site_name' => env('MARKETING_SITE_NAME', 'TipiDV'),
-    'tagline' => env('MARKETING_TAGLINE', 'Soportes PDF nombrados como exige el Ministerio de Salud'),
+    'tagline' => env('MARKETING_TAGLINE', 'Tipificador visual de PDFs en lote: clasifica páginas, renombra y exporta por tipo'),
     'contact_email' => env('MARKETING_CONTACT_EMAIL', 'dialvar30@gmail.com'),
     'contact_phone' => env('MARKETING_CONTACT_PHONE', '+57 313 245 8975'),
     'whatsapp' => env('MARKETING_WHATSAPP', '573132458975'),
@@ -43,15 +43,60 @@ return [
     ],
 
     'seo' => [
-        'title' => env('MARKETING_SEO_TITLE', 'TipiDV — Tipificador PDF para hospitales y clínicas'),
+        'title' => env('MARKETING_SEO_TITLE', 'TipiDV — Tipificador PDF para lotes escaneados'),
         'description' => env(
             'MARKETING_SEO_DESCRIPTION',
-            'TipiDV tipifica y exporta soportes PDF con las abreviaturas del MinSalud (FEV, HEV, EPI, PDX…). Instalador Windows, licencia por equipo, pago con Wompi. Para facturación hospitalaria en Colombia.'
+            'TipiDV clasifica PDFs en lote y exporta un archivo por tipo. Plantilla MinSalud (FEV, HEV, EPI, RIPS). Windows. Licencia por equipo. Pago Wompi.'
         ),
         'keywords' => env(
             'MARKETING_SEO_KEYWORDS',
-            'soportes MinSalud, tipificador PDF, FEV HEV EPI, hospital, facturación hospitalaria, digitalizador, TipiDV, Colombia'
+            'tipificador PDF, clasificar PDF, soportes MinSalud, FEV, HEV, EPI, RIPS, factura electrónica salud, hospital, IPS, facturación hospitalaria, TipiDV, Colombia'
         ),
+        'og_image' => env('MARKETING_SEO_OG_IMAGE', 'images/tipidv-og.png'),
+        'og_image_alt' => 'TipiDV — Tipificador PDF para lotes escaneados y soportes MinSalud',
+        'logo' => 'images/tipidv-logo.png',
+        'theme_color' => '#f26c20',
+        'twitter_site' => env('MARKETING_TWITTER_SITE', ''),
+        'pages' => [
+            'comprar' => [
+                'title' => 'Comprar licencia TipiDV',
+                'description' => 'Compra licencia TipiDV en línea. Paquetes de 1 a 50 equipos, descuentos por volumen. Pago seguro con Wompi. Activación por correo.',
+            ],
+            'gracias' => [
+                'title' => 'Gracias por tu compra',
+                'description' => 'Tu pago TipiDV está en proceso. Revisa tu correo para la clave TDV y el enlace de descarga.',
+            ],
+        ],
+    ],
+
+    /** FAQ — mismo contenido en la landing y en schema FAQPage. */
+    'faq' => [
+        [
+            'question' => '¿Qué es TipiDV?',
+            'answer' => 'Aplicación Windows para tipificar PDFs en lote: clasificas cada página, exportas un archivo por tipo y organizas carpetas por factura o prefijo. Incluye plantilla MinSalud (FEV, HEV, EPI…) y tipos personalizables para otros documentos.',
+        ],
+        [
+            'question' => '¿Solo sirve para hospitales y MinSalud?',
+            'answer' => 'No. El caso principal en Colombia es la facturación en salud (RIPS, FEV, abreviaturas del MinSalud), pero puedes crear tus propios tipos en Configuración: contratos, recibos, anexos legales, etc.',
+        ],
+        [
+            'question' => '¿Cumple con el nombramiento del MinSalud?',
+            'answer' => 'Sí. TipiDV incluye la plantilla con las 15 abreviaturas (FEV, HEV, EPI, PDX, DQX, RAN, CRC, TAP, FAT, FMO, OPF, HAU, HAO, HAM, PDE) y genera archivos como FEV.pdf, HEV.pdf, etc. Puedes ajustar tipos desde Configuración.',
+        ],
+        [
+            'question' => '¿Cuántos equipos cubre una licencia?',
+            'answer' => 'De 1 a 50 PCs con una clave TDV. Mismo correo y clave en cada equipo. Puedes agregar equipos después desde el checkout.',
+        ],
+        [
+            'question' => '¿Cómo descargo e instalo?',
+            'answer' => 'Descarga TipiDV-Setup.exe en la sección Descargar del sitio o en el correo tras comprar. Windows 10/11, 64 bits.',
+            'template' => 'download',
+        ],
+        [
+            'question' => '¿Funciona sin internet?',
+            'answer' => 'Sí, con validación periódica y días de gracia sin conexión.',
+            'template' => 'offline',
+        ],
     ],
 
     /**
@@ -59,6 +104,46 @@ return [
      * TipiDV exporta un PDF por abreviatura: FEV.pdf, HEV.pdf, etc.
      */
     'support_types_effective' => '1 de junio de 2026',
+
+    /** Resoluciones MinSalud citadas en la landing (RIPS / FEV). */
+    'minsalud_norms' => [
+        [
+            'number' => '2275 de 2023',
+            'date' => '28 dic 2023',
+            'summary' => 'Reglamenta el RIPS como soporte de la Factura Electrónica de Venta (FEV) en salud.',
+        ],
+        [
+            'number' => '000948 de 2026',
+            'date' => '14 may 2026',
+            'summary' => 'Actualiza el RIPS como soporte de la FEV; deroga resoluciones anteriores y unifica criterios.',
+        ],
+    ],
+
+    /** Casos de uso en la landing — salud es el principal, no el único. */
+    'use_cases' => [
+        [
+            'icon' => '🏥',
+            'title' => 'Facturación en salud',
+            'desc' => 'Soportes MinSalud (FEV, HEV, EPI, PDX…) listos para RIPS y cargue a tu ERP o validador.',
+            'featured' => true,
+        ],
+        [
+            'icon' => '🏷️',
+            'title' => 'Tipos a tu medida',
+            'desc' => 'Crea, renombra, ordena y desactiva tipos desde Configuración — no estás limitado a la plantilla de salud.',
+        ],
+        [
+            'icon' => '📂',
+            'title' => 'Archivo y trámites',
+            'desc' => 'Contratos, anexos, recibos, actas… cualquier lote escaneado que deba separarse en PDFs por categoría.',
+        ],
+        [
+            'icon' => '⚖️',
+            'title' => 'Contabilidad y legal',
+            'desc' => 'Facturas, soportes de gasto, documentos de cliente: un PDF por tipo y carpeta por radicado o prefijo.',
+        ],
+    ],
+
     'support_types' => [
         ['code' => 'FEV', 'name' => 'Factura'],
         ['code' => 'HEV', 'name' => 'Historia clínica ambulatoria, hospitalización u observación'],
@@ -90,14 +175,14 @@ return [
             'title' => 'Tipificación',
             'items' => [
                 ['icon' => '🎨', 'title' => 'Panel visual', 'desc' => 'Tipos con color, vista previa con zoom y miniaturas etiquetadas.'],
-                ['icon' => '🏷️', 'title' => 'Tipos MinSalud', 'desc' => 'FEV, HEV, EPI, PDX… configurables: nombre, color, orden y activo/inactivo.'],
+                ['icon' => '🏷️', 'title' => 'Tipos personalizables', 'desc' => 'Plantilla MinSalud incluida (FEV, HEV, EPI…). Edita nombre, color, orden y activo/inactivo para tu flujo.'],
                 ['icon' => '⚠️', 'title' => 'Sin tipificar', 'desc' => 'Bloquea la exportación si quedan páginas sin clasificar.'],
             ],
         ],
         [
             'title' => 'Exportación',
             'items' => [
-                ['icon' => '📤', 'title' => 'Un PDF por soporte', 'desc' => 'Genera FEV.pdf, HEV.pdf… fusionando páginas en orden de carga.'],
+                ['icon' => '📤', 'title' => 'Un PDF por tipo', 'desc' => 'Fusiona páginas del mismo tipo en un solo archivo con el nombre que definas (ej. FEV.pdf, Contrato.pdf).'],
                 ['icon' => '📁', 'title' => 'Carpeta por factura', 'desc' => 'Prefijo de factura → Documentos\\SALIDA\\{prefijo}\\ listo para cargar.'],
                 ['icon' => '✂️', 'title' => 'División por MB', 'desc' => 'Parte archivos grandes cuando superan el límite del sistema.'],
             ],

@@ -18,7 +18,7 @@
   <rect x="155" y="218" width="30" height="8" rx="4" fill="#f26c20" opacity=".5"/>
   <rect x="155" y="234" width="20" height="8" rx="4" fill="#9ca3af"/>
   <text x="250" y="250" font-family="system-ui,Segoe UI,sans-serif" font-size="88" font-weight="800" fill="#111827">Tipi<tspan fill="#f26c20">DV</tspan></text>
-  <text x="250" y="320" font-family="system-ui,Segoe UI,sans-serif" font-size="34" fill="#6b7280">Tipificador PDF para hospitales</text>
-  <text x="250" y="380" font-family="system-ui,Segoe UI,sans-serif" font-size="26" fill="#247a2b">Clasifica � Exporta � Licencia por equipo</text>
-  <text x="120" y="460" font-family="system-ui,sans-serif" font-size="22" fill="#9ca3af">Ing. Diego Vargas � Colombia</text>
+  <text x="250" y="320" font-family="system-ui,Segoe UI,sans-serif" font-size="34" fill="#6b7280">Tipificador PDF para lotes escaneados</text>
+  <text x="250" y="380" font-family="system-ui,Segoe UI,sans-serif" font-size="26" fill="#247a2b">MinSalud · FEV · RIPS · Windows</text>
+  <text x="120" y="460" font-family="system-ui,sans-serif" font-size="22" fill="#9ca3af">Ing. Diego Vargas · Colombia</text>
 </svg>

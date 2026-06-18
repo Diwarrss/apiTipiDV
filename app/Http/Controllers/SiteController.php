@@ -46,23 +46,40 @@ final class SiteController extends Controller
             'User-agent: *',
             'Allow: /',
             'Disallow: /admin',
+            'Disallow: /admin/',
             'Disallow: /api',
+            'Disallow: /api/',
+            'Disallow: /gracias',
+            '',
+            'User-agent: GPTBot',
+            'Allow: /',
+            'Disallow: /admin',
+            'Disallow: /api',
+            '',
             'Sitemap: '.url('/sitemap.xml'),
         ];
 
-        return response(implode("\n", $lines), 200, ['Content-Type' => 'text/plain']);
+        return response(implode("\n", $lines), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
     public function sitemap(): Response
     {
+        $now = now()->toAtomString();
         $urls = [
-            ['loc' => url('/'), 'priority' => '1.0'],
-            ['loc' => url('/comprar'), 'priority' => '0.9'],
-            ['loc' => url('/gracias'), 'priority' => '0.3'],
+            ['loc' => url('/'), 'priority' => '1.0', 'lastmod' => $now],
+            ['loc' => url('/comprar'), 'priority' => '0.9', 'lastmod' => $now],
+            ['loc' => route('site.download'), 'priority' => '0.8', 'lastmod' => $now],
         ];
 
         $xml = view('site.sitemap', compact('urls'))->render();
 
-        return response($xml, 200, ['Content-Type' => 'application/xml']);
+        return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    public function llms(): Response
+    {
+        $content = view('site.llms')->render();
+
+        return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 }

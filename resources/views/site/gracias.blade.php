@@ -1,7 +1,8 @@
 @extends('site.layout')
 
-@section('title', 'Gracias por tu compra')
-@section('meta_description', 'Tu pago TipiDV está en proceso. Revisa tu correo para la clave de activación.')
+@section('title', config('marketing.seo.pages.gracias.title', 'Gracias por tu compra'))
+@section('meta_description', config('marketing.seo.pages.gracias.description'))
+@section('meta_robots', 'noindex, nofollow')
 
 @section('content')
 <section style="padding:64px 0;text-align:center">

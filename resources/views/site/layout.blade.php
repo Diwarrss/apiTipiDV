@@ -4,9 +4,19 @@
     $sectionTitle = trim($__env->yieldContent('title'));
     $pageTitle = $sectionTitle !== '' ? "{$sectionTitle} — {$siteName}" : ($seo['title'] ?? $siteName);
     $description = trim($__env->yieldContent('meta_description')) ?: ($seo['description'] ?? '');
-    $canonical = url()->current();
-    $ogImage = asset('images/tipidv-logo.png');
+    $metaRobots = trim($__env->yieldContent('meta_robots')) ?: 'index, follow, max-image-preview:large';
+    $canonical = trim($__env->yieldContent('canonical')) ?: url()->current();
+    $seoPage = trim($__env->yieldContent('seo_page')) ?: match (request()->route()?->getName()) {
+        'site.home' => 'home',
+        'site.comprar' => 'comprar',
+        default => 'other',
+    };
+    $seoService = app(\App\Services\SeoService::class);
+    $ogImage = $seoService->ogImageUrl(trim($__env->yieldContent('og_image')) ?: null);
+    $ogImageAlt = trim($__env->yieldContent('og_image_alt')) ?: ($seo['og_image_alt'] ?? 'TipiDV — Tipificador PDF para lotes escaneados');
+    $structuredGraph = $seoService->graphForPage($seoPage, $description, $lowPriceCop ?? null);
     $whatsappUrl = 'https://wa.me/' . config('marketing.whatsapp') . '?text=' . rawurlencode('Hola, quiero información sobre TipiDV');
+    $themeColor = $seo['theme_color'] ?? '#f26c20';
 @endphp
 <!DOCTYPE html>
 <html lang="es-CO">
@@ -20,8 +30,14 @@
         <meta name="keywords" content="{{ $seo['keywords'] }}">
     @endif
     <meta name="author" content="{{ config('marketing.author') }}">
+    <meta name="robots" content="{{ $metaRobots }}">
+    <meta name="googlebot" content="{{ $metaRobots }}">
+    <meta name="theme-color" content="{{ $themeColor }}">
+    <meta name="geo.region" content="CO">
+    <meta name="language" content="Spanish">
     <link rel="canonical" href="{{ $canonical }}">
-    <meta name="robots" content="index, follow">
+    <link rel="alternate" hreflang="es-CO" href="{{ $canonical }}">
+    <link rel="alternate" hreflang="x-default" href="{{ url('/') }}">
 
     <meta property="og:type" content="website">
     <meta property="og:locale" content="es_CO">
@@ -30,44 +46,39 @@
     <meta property="og:description" content="{{ $description }}">
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image:secure_url" content="{{ $ogImage }}">
+    <meta property="og:image:alt" content="{{ $ogImageAlt }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $pageTitle }}">
     <meta name="twitter:description" content="{{ $description }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
+    <meta name="twitter:image:alt" content="{{ $ogImageAlt }}">
+    @if(!empty($seo['twitter_site']))
+        <meta name="twitter:site" content="{{ $seo['twitter_site'] }}">
+    @endif
 
     <link rel="icon" href="{{ asset('images/tipidv-logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ asset('images/tipidv-logo.png') }}">
     @vite(['resources/css/site.css', 'resources/js/app.js'])
     @livewireStyles
     @stack('head')
-    <script type="application/ld+json">
-    {!! json_encode([
-        '@context' => 'https://schema.org',
-        '@type' => 'SoftwareApplication',
-        'name' => $siteName,
-        'applicationCategory' => 'BusinessApplication',
-        'operatingSystem' => 'Windows',
-        'description' => $description,
-        'url' => url('/'),
-        'offers' => [
-            '@type' => 'Offer',
-            'priceCurrency' => 'COP',
-            'availability' => 'https://schema.org/InStock',
-            'url' => url('/comprar'),
-        ],
-        'author' => [
-            '@type' => 'Person',
-            'name' => config('marketing.author'),
-            'url' => config('marketing.author_url'),
-        ],
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
-    </script>
+    @if($structuredGraph !== [])
+        <script type="application/ld+json">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@graph' => $structuredGraph,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) !!}
+        </script>
+    @endif
 </head>
 <body>
     <header class="site-header" x-data="{ menuOpen: false }" @keydown.escape.window="menuOpen = false">
         <div class="container inner">
             <a href="{{ url('/') }}" class="logo" aria-label="TipiDV inicio">
-                <img src="{{ asset('images/tipidv-logo.png') }}" alt="" class="logo-mark" width="44" height="44">
+                <img src="{{ asset('images/tipidv-logo.png') }}" alt="Logo TipiDV" class="logo-mark" width="44" height="44">
                 <span class="logo-wordmark">Tipi<span>DV</span></span>
             </a>
             <button
@@ -81,7 +92,8 @@
                 <span class="nav-toggle-icon" aria-hidden="true"></span>
             </button>
             <nav id="site-nav" class="nav" :class="{ 'is-open': menuOpen }" aria-label="Principal" @click.outside="menuOpen = false">
-                <a href="{{ url('/#soportes') }}" @click="menuOpen = false">Soportes MinSalud</a>
+                <a href="{{ url('/#casos') }}" @click="menuOpen = false">Casos de uso</a>
+                <a href="{{ url('/#soportes') }}" @click="menuOpen = false">MinSalud</a>
                 <a href="{{ url('/#funciones') }}" @click="menuOpen = false">Funciones</a>
                 <a href="{{ url('/#descargar') }}" @click="menuOpen = false">Descargar</a>
                 <a href="{{ url('/#precios') }}" @click="menuOpen = false">Precios</a>
@@ -96,7 +108,7 @@
         </div>
     </header>
 
-    <main>
+    <main id="contenido-principal">
         @if (session('status'))
             <div class="site-flash site-flash--success" role="alert">{{ session('status') }}</div>
         @endif
@@ -110,7 +122,7 @@
         <div class="container footer-grid">
             <div>
                 <a href="{{ url('/') }}" class="logo" aria-label="TipiDV inicio">
-                    <img src="{{ asset('images/tipidv-logo.png') }}" alt="" class="logo-mark" width="44" height="44">
+                    <img src="{{ asset('images/tipidv-logo.png') }}" alt="Logo TipiDV" class="logo-mark" width="44" height="44">
                     <span class="logo-wordmark">Tipi<span>DV</span></span>
                 </a>
                 <p style="margin:12px 0 0">{{ config('marketing.tagline') }}</p>
@@ -121,7 +133,8 @@
             <div>
                 <strong class="footer-heading">Producto</strong>
                 <a href="{{ url('/comprar') }}">Comprar</a><br>
-                <a href="{{ url('/#soportes') }}">Soportes MinSalud</a><br>
+                <a href="{{ url('/#casos') }}">Casos de uso</a><br>
+                <a href="{{ url('/#soportes') }}">MinSalud</a><br>
                 <a href="{{ url('/#descargar') }}">Descargar</a><br>
                 <a href="{{ url('/#precios') }}">Precios</a>
             </div>

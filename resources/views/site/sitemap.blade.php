@@ -3,7 +3,10 @@
 @foreach($urls as $u)
     <url>
         <loc>{{ $u['loc'] }}</loc>
-        <changefreq>weekly</changefreq>
+        @if(!empty($u['lastmod']))
+        <lastmod>{{ $u['lastmod'] }}</lastmod>
+        @endif
+        <changefreq>{{ $u['changefreq'] ?? 'weekly' }}</changefreq>
         <priority>{{ $u['priority'] ?? '0.5' }}</priority>
     </url>
 @endforeach

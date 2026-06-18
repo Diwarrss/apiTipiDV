@@ -552,6 +552,108 @@ section { padding: 0; }
     margin-bottom: 8px;
 }
 
+/* Casos de uso */
+.use-cases-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+.use-case {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+.use-case--featured {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 1px var(--orange-glow), var(--shadow);
+}
+.use-case-badge {
+    display: inline-block;
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--orange);
+    background: var(--icon-bg);
+    padding: 4px 8px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+}
+.use-case-icon {
+    font-size: 1.75rem;
+    margin-bottom: 10px;
+}
+.use-case h3 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    color: var(--text-strong);
+}
+.use-case p {
+    margin: 0;
+    color: var(--muted);
+    font-size: .88rem;
+    line-height: 1.5;
+}
+
+/* Resoluciones MinSalud */
+.norms-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.norm-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+}
+.norm-label {
+    display: block;
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 4px;
+}
+.norm-number {
+    display: block;
+    font-size: 1rem;
+    color: var(--text-strong);
+    margin-bottom: 2px;
+}
+.norm-date {
+    display: block;
+    font-size: .78rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.norm-card p {
+    margin: 0;
+    font-size: .85rem;
+    color: var(--muted);
+    line-height: 1.45;
+}
+.soportes-card-head {
+    padding: 16px 18px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+}
+.soportes-card-head h3 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    color: var(--text-strong);
+}
+.soportes-card-head p {
+    margin: 0 0 14px;
+    font-size: .85rem;
+    color: var(--muted);
+}
+
 /* Tabla MinSalud */
 .soportes-card {
     background: var(--bg-card);
