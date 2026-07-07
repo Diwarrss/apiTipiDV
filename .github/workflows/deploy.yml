@@ -1,0 +1,53 @@
+name: Deploy tipidv.gridsoft.co
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      migrate:
+        description: Ejecutar migraciones (php artisan migrate --force)
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-tipidv-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to HostDime
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy via deploy.sh
+        run: |
+          ARGS=()
+          if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event.inputs.migrate }}" == "true" ]]; then
+            ARGS+=(--migrate)
+          fi
+          ssh -o StrictHostKeyChecking=no ubuntu@200.7.105.79 "bash -s" -- "${ARGS[@]}" < deployment-scripts/deploy-tipidv.sh
+
+      - name: Verify site responds
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://tipidv.gridsoft.co/)
+            if [[ "$code" == "200" || "$code" == "302" ]]; then
+              echo "OK HTTP $code"
+              exit 0
+            fi
+            echo "Intento $i: HTTP $code, reintentando..."
+            sleep 5
+          done
+          echo "El sitio no respondió 200/302 tras el deploy"
+          exit 1

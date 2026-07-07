@@ -65,6 +65,14 @@ done
 
 [[ -f artisan ]] || fail "No se encontró artisan. Ejecuta el script desde la raíz del proyecto."
 
+# Node vía nvm en servidores HostDime (SSH no interactivo)
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    # shellcheck source=/dev/null
+    . "$NVM_DIR/nvm.sh"
+    nvm use 24.3.0 2>/dev/null || nvm use default 2>/dev/null || true
+fi
+
 command -v php >/dev/null 2>&1 || fail "php no está instalado o no está en PATH"
 command -v composer >/dev/null 2>&1 || fail "composer no está instalado"
 command -v npm >/dev/null 2>&1 || fail "npm no está instalado"
