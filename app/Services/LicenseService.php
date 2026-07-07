@@ -307,15 +307,82 @@ final class LicenseService
         ];
     }
 
-    private function sendLicenseEmail(Subscription $subscription): void
+    private function sendLicenseEmail(Subscription $subscription, bool $isGift = false): bool
     {
         try {
-            Mail::to($subscription->customer_email)->send(new LicenseIssuedMail($subscription));
+            Mail::to($subscription->customer_email)->send(new LicenseIssuedMail($subscription, $isGift));
+
+            return true;
         } catch (\Throwable $e) {
             Log::error('TipiDV: no se pudo enviar correo de licencia', [
                 'email' => $subscription->customer_email,
                 'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
+    }
+
+    public function resendLicenseEmail(Subscription $subscription): bool
+    {
+        $isGift = ($subscription->metadata['source'] ?? null) === 'admin_manual';
+
+        return $this->sendLicenseEmail($subscription, $isGift);
+    }
+
+    /**
+     * Licencia creada manualmente desde el panel admin (cortesía, demo, regalo).
+     */
+    public function provisionManual(
+        string $email,
+        ?string $customerName,
+        ?string $organizationName,
+        int $machineSlots,
+        int $months,
+        string $billingPeriod = LicenseSupport::PERIOD_ANNUAL,
+        bool $sendEmail = true,
+        ?string $adminNote = null,
+    ): array {
+        $email = strtolower(trim($email));
+        $machineSlots = max(1, min(99, $machineSlots));
+        $months = max(1, min(60, $months));
+        $startsAt = now();
+
+        $subscription = Subscription::query()->create([
+            'license_key' => LicenseSupport::generateLicenseKey(),
+            'customer_email' => $email,
+            'customer_name' => $customerName !== null && trim($customerName) !== '' ? trim($customerName) : null,
+            'organization_name' => $organizationName !== null && trim($organizationName) !== '' ? trim($organizationName) : null,
+            'billing_period' => $billingPeriod,
+            'machine_slots' => $machineSlots,
+            'starts_at' => $startsAt,
+            'expires_at' => $startsAt->copy()->addMonths($months),
+            'status' => Subscription::STATUS_ACTIVE,
+            'wompi_reference' => null,
+            'transaction_uuid' => null,
+            'amount_cop' => 0,
+            'metadata' => [
+                'source' => 'admin_manual',
+                'created_by_admin_at' => now()->toIso8601String(),
+                'admin_note' => $adminNote,
+                'billing_months' => $months,
+            ],
+        ]);
+
+        $emailSent = false;
+        if ($sendEmail) {
+            $emailSent = $this->sendLicenseEmail($subscription, true);
+        }
+
+        Log::info('TipiDV licencia manual (admin)', [
+            'license_key' => $subscription->license_key,
+            'email' => $subscription->customer_email,
+            'email_sent' => $emailSent,
+        ]);
+
+        return [
+            'subscription' => $subscription,
+            'email_sent' => $emailSent,
+        ];
     }
 }

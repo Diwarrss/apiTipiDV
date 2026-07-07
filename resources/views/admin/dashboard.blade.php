@@ -4,12 +4,18 @@
 
 @section('nav')
     <a href="{{ route('admin.dashboard') }}" class="admin-nav-link is-active">Licencias</a>
+    <a href="{{ route('admin.licenses.create') }}" class="admin-nav-link">+ Nueva licencia</a>
 @endsection
 
 @section('content')
 <div class="page-header">
-    <h1>Licencias TipiDV</h1>
-    <p>Gestión de suscripciones y activaciones</p>
+    <div class="page-header-row">
+        <div>
+            <h1>Licencias TipiDV</h1>
+            <p>Gestión de suscripciones y activaciones</p>
+        </div>
+        <a href="{{ route('admin.licenses.create') }}" class="btn">+ Crear licencia</a>
+    </div>
 </div>
 
 <div class="stats">

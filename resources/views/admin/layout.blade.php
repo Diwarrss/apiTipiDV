@@ -4,17 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Admin') — TipiDV</title>
+    <link rel="icon" href="{{ asset('images/tipidv-logo.png') }}" type="image/png">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v={{ filemtime(public_path('css/admin.css')) }}">
 </head>
 <body>
     @hasSection('nav')
         <header class="admin-header">
             <a href="{{ route('admin.dashboard') }}" class="admin-brand">
-                <span class="admin-brand-mark">TD</span>
-                <span>TipiDV <span class="admin-brand-sub">· Admin</span></span>
+                <img src="{{ asset('images/tipidv-logo.png') }}" alt="TipiDV" class="admin-brand-logo" width="36" height="36">
+                <span class="admin-brand-text">Tipi<span>DV</span> <span class="admin-brand-sub">· Admin</span></span>
             </a>
             <div class="admin-nav">
                 @yield('nav')
+                <a href="{{ route('site.home') }}" class="admin-nav-link" target="_blank" rel="noopener">Ver sitio</a>
                 <form action="{{ route('admin.logout') }}" method="post" style="display:inline;">
                     @csrf
                     <button type="submit" class="btn btn--muted btn--sm">Salir</button>

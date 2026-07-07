@@ -14,8 +14,10 @@ class LicenseIssuedMail extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public Subscription $subscription)
-    {
+    public function __construct(
+        public Subscription $subscription,
+        public bool $isGift = false,
+    ) {
     }
 
     public function build(): self

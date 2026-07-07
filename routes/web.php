@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\LicenseAdminController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
@@ -23,9 +24,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware('super.admin')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('licenses/create', [LicenseAdminController::class, 'create'])->name('licenses.create');
+        Route::post('licenses', [LicenseAdminController::class, 'store'])->name('licenses.store');
         Route::get('subscriptions/{subscription}', [DashboardController::class, 'show'])->name('subscriptions.show');
         Route::post('subscriptions/{subscription}/extend', [DashboardController::class, 'extend'])->name('subscriptions.extend');
         Route::post('subscriptions/{subscription}/slots', [DashboardController::class, 'updateSlots'])->name('subscriptions.slots');
+        Route::post('subscriptions/{subscription}/resend-email', [LicenseAdminController::class, 'resendEmail'])->name('subscriptions.resend-email');
         Route::post('activations/{activation}/deactivate', [DashboardController::class, 'deactivateMachine'])->name('activations.deactivate');
     });
 });

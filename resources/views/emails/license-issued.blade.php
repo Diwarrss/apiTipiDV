@@ -7,7 +7,11 @@
 <body style="font-family:Segoe UI,Arial,sans-serif;color:#111827;line-height:1.5;max-width:560px;margin:0 auto;padding:24px;">
     <h2 style="color:#f26c20;margin-top:0;">TipiDV — licencia activada</h2>
     <p>Hola{{ $subscription->customer_name ? ' ' . e($subscription->customer_name) : '' }},</p>
-    <p>Gracias por tu pago. Tu licencia ya está disponible.</p>
+    @if (!empty($isGift))
+        <p>Tu licencia <strong>TipiDV</strong> ya está disponible.</p>
+    @else
+        <p>Gracias por tu pago. Tu licencia ya está disponible.</p>
+    @endif
 
     <p><strong>Clave de licencia:</strong><br>
         <code style="font-size:18px;background:#f3f4f6;padding:10px 14px;display:inline-block;border-radius:6px;">{{ $subscription->license_key }}</code>

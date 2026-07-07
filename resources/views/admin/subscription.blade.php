@@ -32,6 +32,9 @@
             @else
                 <span class="badge badge--no">● Vencida</span>
             @endif
+            @if (($subscription->metadata['source'] ?? null) === 'admin_manual')
+                <span class="badge badge--warn">Manual / regalo</span>
+            @endif
         </div>
     </div>
 </div>
@@ -83,6 +86,18 @@
 
 <div class="card">
     <h2 class="card-title">Acciones</h2>
+
+    <div class="action-block">
+        <p class="action-block-title">Correo de licencia</p>
+        <form method="post" action="{{ route('admin.subscriptions.resend-email', $subscription) }}" class="row">
+            @csrf
+            <p style="margin:0;color:var(--muted);font-size:.9rem;flex:1;">
+                Reenvía la clave <strong>{{ $subscription->license_key }}</strong> y el enlace de descarga a
+                <strong>{{ $subscription->customer_email }}</strong>.
+            </p>
+            <button type="submit" class="btn btn--ghost">Reenviar correo</button>
+        </form>
+    </div>
 
     <div class="action-block">
         <p class="action-block-title">Extender vigencia</p>
