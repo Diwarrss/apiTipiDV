@@ -84,6 +84,10 @@ return [
             'answer' => 'Sí. TipiDV incluye la plantilla con las 15 abreviaturas (FEV, HEV, EPI, PDX, DQX, RAN, CRC, TAP, FAT, FMO, OPF, HAU, HAO, HAM, PDE) y genera archivos como FEV.pdf, HEV.pdf, etc. Puedes ajustar tipos desde Configuración.',
         ],
         [
+            'question' => '¿Une las páginas del mismo tipo en un solo PDF?',
+            'answer' => 'Sí. Al procesar, TipiDV agrupa las páginas tipificadas con el mismo tipo y las une en un archivo (por ejemplo todas las HEV en HEV.pdf). En Configuración, cada tipo tiene la opción «Fusionar en un solo PDF»; si la desactivas, exporta un archivo por página.',
+        ],
+        [
             'question' => '¿Cuántos equipos cubre una licencia?',
             'answer' => 'De 1 a 50 PCs con una clave TDV. Mismo correo y clave en cada equipo. Puedes agregar equipos después desde el checkout.',
         ],

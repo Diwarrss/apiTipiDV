@@ -93,6 +93,7 @@
             </button>
             <nav id="site-nav" class="nav" aria-label="Principal">
                 <a href="{{ url('/#casos') }}">Casos de uso</a>
+                <a href="{{ url('/#como-une') }}">Cómo une</a>
                 <a href="{{ url('/#soportes') }}">MinSalud</a>
                 <a href="{{ url('/#funciones') }}">Funciones</a>
                 <a href="{{ url('/#descargar') }}">Descargar</a>

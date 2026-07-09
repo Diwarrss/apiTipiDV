@@ -81,7 +81,7 @@
                             <span class="flow-step-icon" aria-hidden="true">⚡</span>
                             <div class="flow-step-text">
                                 <strong>Procesa la factura</strong>
-                                <p>Prefijo → genera un PDF por tipo en la carpeta de salida.</p>
+                                <p>Prefijo → une páginas del mismo tipo en un PDF (<a href="#como-une">ver ejemplo</a>).</p>
                             </div>
                         </div>
                     </li>
@@ -104,6 +104,8 @@
     </section>
 
     @include('site.partials.use-cases')
+
+    @include('site.partials.merge-demo')
 
     @include('site.partials.minsalud-soportes')
 
